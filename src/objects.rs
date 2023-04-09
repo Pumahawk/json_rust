@@ -59,6 +59,10 @@ impl ListJson {
             list: Vec::new(),
         }
     }
+
+    pub fn add<T: Json + 'static>(&mut self, obj: T) {
+        self.list.push(Box::new(obj));
+    }
 }
 
 impl Json for ListJson {
@@ -91,5 +95,12 @@ mod tests {
         root.set("key1", obj1);
         let obj2 = root.create("key2");
         obj2.set("key-sub-1", obj_sub_1);
+    }
+    #[test]
+    fn edit_list() {
+        let mut root = array();
+        let obj1 = json();
+
+        root.add(obj1);
     }
 }
