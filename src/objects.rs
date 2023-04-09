@@ -86,9 +86,10 @@ mod tests {
     fn edit_objects() {
         let mut root = json();
         let obj1 = json();
+        let obj_sub_1 = json();
 
         root.set("key1", obj1);
         let obj2 = root.create("key2");
-        //obj2.set("key-sub-1", obj1);
+        obj2.set("key-sub-1", obj_sub_1);
     }
 }
