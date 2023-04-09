@@ -74,3 +74,17 @@ pub fn json() -> ObjectJson {
 pub fn array() -> ListJson {
     ListJson::new()
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::objects::*;
+    #[test]
+    fn edit_objects() {
+        let mut root = json();
+        let obj1 = json();
+
+        root.set("key1", obj1);
+        let obj2 = root.create("key2");
+        //obj2.set("key-sub-1", obj1);
+    }
+}
