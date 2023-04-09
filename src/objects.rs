@@ -38,8 +38,8 @@ impl ObjectJson {
         }
     }
 
-    pub fn get(&self, key: &str) -> Option<&(dyn Json + 'static)> {
-        self.parameters.iter().find(|el| el.0 == key).map(|el| &*el.1)
+    pub fn get(&mut self, key: &str) -> Option<&mut (dyn Json + 'static)> {
+        self.parameters.iter_mut().find(|el| el.0 == key).map(|el| el.1.deref_mut())
     }
 }
 
