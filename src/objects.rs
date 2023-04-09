@@ -2,15 +2,15 @@
 use std::ops::DerefMut;
 
 pub enum TypeJson<'a> {
-    Object(&'a ObjectJson),
-    List(&'a ListJson),
-    Text(&'a str),
-    Number(&'a f32),
+    Object(&'a mut ObjectJson),
+    List(&'a mut ListJson),
+    Text(&'a mut str),
+    Number(&'a mut f32),
     Null,
 }
 
 pub trait Json {
-    fn json(&self) -> TypeJson;
+    fn json(&mut self) -> TypeJson;
 }
 
 pub struct ObjectJson {
@@ -36,7 +36,7 @@ impl ObjectJson {
 }
 
 impl Json for ObjectJson {
-    fn json(&self) -> TypeJson {
+    fn json(&mut self) -> TypeJson {
         TypeJson::Object(self)
     }
 }
@@ -54,7 +54,7 @@ impl ListJson {
 }
 
 impl Json for ListJson {
-    fn json(&self) -> TypeJson {
+    fn json(&mut self) -> TypeJson {
         TypeJson::List(self)
     }
 }
