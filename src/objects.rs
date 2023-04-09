@@ -79,7 +79,7 @@ pub struct NumberJson;
 pub struct TextJson;
 pub struct NullJson;
 
-pub fn json() -> ObjectJson {
+pub fn object() -> ObjectJson {
     ObjectJson::new()
 }
 
@@ -92,9 +92,9 @@ mod tests {
     use crate::objects::*;
     #[test]
     fn edit_objects() {
-        let mut root = json();
-        let obj1 = json();
-        let obj_sub_1 = json();
+        let mut root = object();
+        let obj1 = object();
+        let obj_sub_1 = object();
 
         root.set("key1", obj1);
         let obj2 = root.create("key2");
@@ -103,7 +103,7 @@ mod tests {
     #[test]
     fn edit_list() {
         let mut root = array();
-        let obj1 = json();
+        let obj1 = object();
 
         root.add(obj1);
         assert!(root.get(0).is_some());
