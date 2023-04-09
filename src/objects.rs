@@ -1,3 +1,6 @@
+
+use std::ops::DerefMut;
+
 pub enum TypeJson<'a> {
     Object(&'a ObjectJson),
     List(&'a ListJson),
@@ -24,6 +27,11 @@ impl ObjectJson {
 
     pub fn set<T: Json + 'static>(&mut self, key: &str, obj: T) {
         self.parameters.push((String::from(key), Box::new(obj)));
+    }
+
+    pub fn create(&mut self, key: &str) -> &mut (dyn Json + 'static) {
+        self.set(key, ObjectJson::new());
+        self.parameters.last_mut().unwrap().1.deref_mut()
     }
 }
 
