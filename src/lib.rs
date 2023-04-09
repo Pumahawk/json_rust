@@ -1,1 +1,2 @@
-pub mod objects;
+mod objects;
+pub use objects::*;
