@@ -128,12 +128,27 @@ mod tests {
     #[test]
     fn edit_objects() {
         let mut root = object();
-        let obj1 = object();
-        let obj_sub_1 = object();
-
+        let mut obj1 = object();
+        let mut obj_sub_1 = object();
+        
+        obj1.set("field", text("hello World"));
         root.set("key1", obj1);
-        let obj2 = root.create("key2");
-        obj2.set("key-sub-1", obj_sub_1);
+        {
+            let obj2 = root.create("key2");
+            obj_sub_1.set("field", text("hello World 2"));
+            obj2.set("key-sub-1", obj_sub_1);
+        }
+
+        match root.get("key1").unwrap().json() {
+            TypeJson::Object(obj) => {
+                match obj.get("field").unwrap().json() {
+                    TypeJson::Text(msg) => assert_eq!(msg, "hello World"),
+                    _ => assert!(false),
+                }
+            },
+            _ => assert!(false),
+        }
+
     }
     #[test]
     fn edit_list() {
