@@ -29,9 +29,13 @@ impl ObjectJson {
         self.parameters.push((String::from(key), Box::new(obj)));
     }
 
-    pub fn create(&mut self, key: &str) -> &mut (dyn Json + 'static) {
+    pub fn create(&mut self, key: &str) -> &mut ObjectJson {
         self.set(key, ObjectJson::new());
-        self.parameters.last_mut().unwrap().1.deref_mut()
+        if let TypeJson::Object(obj) = self.parameters.last_mut().unwrap().1.deref_mut().json() {
+            obj
+        } else {
+            unreachable!();
+        }
     }
 
     pub fn get(&self, key: &str) -> Option<&(dyn Json + 'static)> {
