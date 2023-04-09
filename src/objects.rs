@@ -89,6 +89,12 @@ impl TextJson {
     }
 }
 
+impl Json for TextJson {
+    fn json(&mut self) -> TypeJson {
+        TypeJson::Text(&mut self.value)
+    }
+}
+
 impl Deref for TextJson {
     type Target = String;
     fn deref(&self) -> &Self::Target {
