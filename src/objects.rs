@@ -63,6 +63,10 @@ impl ListJson {
     pub fn add<T: Json + 'static>(&mut self, obj: T) {
         self.list.push(Box::new(obj));
     }
+
+    pub fn get(&mut self, index: usize) -> Option<&mut (dyn Json + 'static)> {
+        self.list.get_mut(index).map(|b|&mut **b)
+    }
 }
 
 impl Json for ListJson {
@@ -102,5 +106,6 @@ mod tests {
         let obj1 = json();
 
         root.add(obj1);
+        assert!(root.get(0).is_some());
     }
 }
