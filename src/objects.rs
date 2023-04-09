@@ -33,6 +33,10 @@ impl ObjectJson {
         self.set(key, ObjectJson::new());
         self.parameters.last_mut().unwrap().1.deref_mut()
     }
+
+    pub fn get(&self, key: &str) -> Option<&(dyn Json + 'static)> {
+        self.parameters.iter().find(|el| el.0 == key).map(|el| &*el.1)
+    }
 }
 
 impl Json for ObjectJson {
