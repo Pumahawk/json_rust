@@ -1,4 +1,4 @@
-
+use std::ops::Deref;
 use std::ops::DerefMut;
 
 pub enum TypeJson<'a> {
@@ -76,7 +76,32 @@ impl Json for ListJson {
 }
 
 pub struct NumberJson;
-pub struct TextJson;
+
+pub struct TextJson {
+    value: String,
+}
+
+impl TextJson {
+    pub fn new(value: String) -> TextJson {
+        TextJson {
+            value,
+        }
+    }
+}
+
+impl Deref for TextJson {
+    type Target = String;
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl DerefMut for TextJson {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.value
+    }
+}
+
 pub struct NullJson;
 
 pub fn object() -> ObjectJson {
@@ -85,6 +110,10 @@ pub fn object() -> ObjectJson {
 
 pub fn array() -> ListJson {
     ListJson::new()
+}
+
+pub fn text<T: ToString>(txt: T) -> TextJson {
+    TextJson::new(txt.to_string())
 }
 
 #[cfg(test)]
@@ -107,5 +136,12 @@ mod tests {
 
         root.add(obj1);
         assert!(root.get(0).is_some());
+    }
+    #[test]
+    fn edit_text() {
+        let mut text = text("message");
+        assert_eq!(&*text, "message");
+        *text = String::from("message edit");
+        assert_eq!(&*text, "message edit");
     }
 }
