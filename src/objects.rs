@@ -110,6 +110,12 @@ impl TextJson {
     }
 }
 
+impl <T: ToString> From<T> for TextJson {
+    fn from(value: T) -> Self {
+        Self::new(value.to_string())
+    }
+}
+
 impl Json for TextJson {
     fn json(&mut self) -> TypeJson {
         TypeJson::Text(&mut self.value)
@@ -140,7 +146,7 @@ pub fn array() -> ListJson {
 }
 
 pub fn text<T: ToString>(txt: T) -> TextJson {
-    TextJson::new(txt.to_string())
+    TextJson::from(txt)
 }
 
 #[cfg(test)]
