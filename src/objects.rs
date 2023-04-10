@@ -37,13 +37,17 @@ impl ObjectJson {
         }
     }
 
-    pub fn get(&mut self, key: &str) -> Option<&mut (dyn Json + 'static)> {
-        self.parameters.iter_mut().find(|el| el.0 == key).map(|el| el.1.deref_mut())
+    pub fn get(&mut self, key: &str) -> Option<TypeJson> {
+        self.parameters
+            .iter_mut()
+            .find(|el| el.0 == key)
+            .map(|el| el.1.deref_mut())
+            .map(|el|el.json())
     }
     
     pub fn as_object(&mut self, key: &str) -> Option<&mut ObjectJson> {
-        match self.get(key)?.json() {
-            TypeJson::Object(obj) => Some(obj),
+        match self.get(key) {
+            Some(TypeJson::Object(obj)) => Some(obj),
             _ => None,
         }
     }
@@ -145,10 +149,10 @@ mod tests {
             obj2.set("key-sub-1", obj_sub_1);
         }
 
-        match root.get("key1").unwrap().json() {
-            TypeJson::Object(obj) => {
-                match obj.get("field").unwrap().json() {
-                    TypeJson::Text(msg) => assert_eq!(msg, "hello World"),
+        match root.get("key1") {
+            Some(TypeJson::Object(obj)) => {
+                match obj.get("field") {
+                    Some(TypeJson::Text(msg)) => assert_eq!(msg, "hello World"),
                     _ => assert!(false),
                 }
             },
@@ -158,7 +162,7 @@ mod tests {
         match root
             .as_object("key2")
             .and_then(|obj|obj.as_object("key-sub-1"))
-            .and_then(|obj|Some(obj.get("field")?.json())) {
+            .and_then(|obj|obj.get("field")) {
                 Some(TypeJson::Text(msg)) => assert_eq!(msg, "hello World 2"),
                 _ => assert!(false), 
             }
