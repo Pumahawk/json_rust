@@ -96,7 +96,42 @@ impl Json for ListJson {
     }
 }
 
-pub struct NumberJson;
+pub struct NumberJson {
+    value: f32,
+}
+
+impl NumberJson {
+    pub fn new(value: f32) -> NumberJson {
+        NumberJson {
+            value,
+        }
+    }
+}
+
+impl From<f32> for NumberJson {
+    fn from(value: f32) -> Self {
+        NumberJson::new(value)
+    }
+}
+
+impl Json for NumberJson {
+    fn json(&mut self) -> TypeJson {
+        TypeJson::Number(&mut self.value)
+    }
+}
+
+impl Deref for NumberJson {
+    type Target = f32;
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl DerefMut for NumberJson {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.value
+    }
+}
 
 pub struct TextJson {
     value: String,
@@ -147,6 +182,10 @@ pub fn array() -> ListJson {
 
 pub fn text<T: ToString>(txt: T) -> TextJson {
     TextJson::from(txt)
+}
+
+pub fn number(num: f32) -> NumberJson {
+    NumberJson::from(num)
 }
 
 #[cfg(test)]
@@ -222,5 +261,17 @@ mod tests {
         assert_eq!(&*text, "message");
         *text = String::from("message edit");
         assert_eq!(&*text, "message edit");
+    }
+    #[test]
+    fn edit_number() {
+        let mut number = number(5.3);
+        assert_eq!(*number, 5.3);
+        *number = 6.2;
+        assert_eq!(*number, 6.2);
+
+        match number.json() {
+            TypeJson::Number(num) => assert_eq!(num, &6.2),
+            _ => assert!(false),
+        }
     }
 }
