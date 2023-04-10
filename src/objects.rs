@@ -31,10 +31,9 @@ impl ObjectJson {
 
     pub fn create(&mut self, key: &str) -> &mut ObjectJson {
         self.set(key, ObjectJson::new());
-        if let TypeJson::Object(obj) = self.parameters.last_mut().unwrap().1.deref_mut().json() {
-            obj
-        } else {
-            unreachable!();
+        match self.parameters.last_mut().unwrap().1.deref_mut().json() {
+            TypeJson::Object(obj) => obj,
+            _ => unreachable!(),
         }
     }
 
@@ -43,10 +42,9 @@ impl ObjectJson {
     }
     
     pub fn as_object(&mut self, key: &str) -> Option<&mut ObjectJson> {
-        if let TypeJson::Object(obj) = self.get(key)?.json() {
-            Some(obj)
-        } else {
-            None
+        match self.get(key)?.json() {
+            TypeJson::Object(obj) => Some(obj),
+            _ => None,
         }
     }
 }
