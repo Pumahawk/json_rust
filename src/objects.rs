@@ -77,6 +77,10 @@ impl ListJson {
         }
     }
 
+    pub fn len(&self) -> usize {
+        self.list.len()
+    }
+
     pub fn add<T: Json + 'static>(&mut self, obj: T) {
         self.list.push(Box::new(obj));
     }
