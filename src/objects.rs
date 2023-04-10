@@ -77,6 +77,10 @@ impl ListJson {
     pub fn get(&mut self, index: usize) -> Option<TypeJson> {
         self.list.get_mut(index).map(|b|&mut **b).map(|b|b.json())
     }
+
+    pub fn iter_mut(&mut self) -> impl Iterator<Item=TypeJson> {
+        self.list.iter_mut().map(|b|&mut **b).map(|b|b.json())
+    }
 }
 
 impl Json for ListJson {
@@ -171,10 +175,26 @@ mod tests {
     #[test]
     fn edit_list() {
         let mut root = array();
-        let obj1 = object();
+        let mut obj1 = object();
+        obj1.set("key1", text("value1"));
 
         root.add(obj1);
+        root.add(text("second"));
         assert!(root.get(0).is_some());
+
+        let mut iter = root.iter_mut();
+        match iter.next() {
+            Some(TypeJson::Object(obj)) => match obj.get("key1") {
+                Some(TypeJson::Text(msg)) => assert_eq!(msg, "value1"),
+                _ => unreachable!(),
+            },
+            _ => unreachable!(),
+        }
+
+        match iter.next() {
+            Some(TypeJson::Text(msg)) => assert_eq!(msg, "second"),
+            _ => assert!(false),
+        }
     }
     #[test]
     fn edit_text() {
