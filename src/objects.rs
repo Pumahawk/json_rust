@@ -74,8 +74,8 @@ impl ListJson {
         self.list.push(Box::new(obj));
     }
 
-    pub fn get(&mut self, index: usize) -> Option<&mut (dyn Json + 'static)> {
-        self.list.get_mut(index).map(|b|&mut **b)
+    pub fn get(&mut self, index: usize) -> Option<TypeJson> {
+        self.list.get_mut(index).map(|b|&mut **b).map(|b|b.json())
     }
 }
 
