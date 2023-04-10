@@ -31,8 +31,8 @@ impl ObjectJson {
 
     pub fn create(&mut self, key: &str) -> &mut ObjectJson {
         self.set(key, ObjectJson::new());
-        match self.parameters.last_mut().unwrap().1.deref_mut().json() {
-            TypeJson::Object(obj) => obj,
+        match self.get(key) {
+            Some(TypeJson::Object(obj)) => obj,
             _ => unreachable!(),
         }
     }
