@@ -59,6 +59,13 @@ impl ObjectJson {
         }
     }
 
+    pub fn as_number(&mut self, key: &str) -> Option<&mut f32> {
+        match self.get(key) {
+            Some(TypeJson::Number(number)) => Some(number),
+            _ => None,
+        }
+    }
+
     pub fn iter_mut(&mut self) -> impl Iterator<Item=(&String, TypeJson)> {
         self.parameters.iter_mut().map(|(k, v)|(k, v.json()))
     }
