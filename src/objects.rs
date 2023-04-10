@@ -155,6 +155,14 @@ mod tests {
             _ => assert!(false),
         }
 
+        match root
+            .as_object("key2")
+            .and_then(|obj|obj.as_object("key-sub-1"))
+            .and_then(|obj|Some(obj.get("field")?.json())) {
+                Some(TypeJson::Text(msg)) => assert_eq!(msg, "hello World 2"),
+                _ => assert!(false), 
+            }
+
     }
     #[test]
     fn edit_list() {
