@@ -41,6 +41,14 @@ impl ObjectJson {
     pub fn get(&mut self, key: &str) -> Option<&mut (dyn Json + 'static)> {
         self.parameters.iter_mut().find(|el| el.0 == key).map(|el| el.1.deref_mut())
     }
+    
+    pub fn as_object(&mut self, key: &str) -> Option<&mut ObjectJson> {
+        if let TypeJson::Object(obj) = self.get(key)?.json() {
+            Some(obj)
+        } else {
+            None
+        }
+    }
 }
 
 impl Json for ObjectJson {
