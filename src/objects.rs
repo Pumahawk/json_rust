@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::ops::Deref;
 use std::ops::DerefMut;
 
@@ -14,19 +15,19 @@ pub trait Json {
 }
 
 pub struct ObjectJson {
-    parameters: Vec<(String, Box<dyn Json>)>,
+    parameters: HashMap<String, Box<dyn Json>>,
 }
 
 impl ObjectJson {
 
     fn new() -> ObjectJson {
         ObjectJson {
-            parameters: Vec::new(),
+            parameters: HashMap::new(),
         }
     }
 
     pub fn set<T: Json + 'static>(&mut self, key: &str, obj: T) {
-        self.parameters.push((String::from(key), Box::new(obj)));
+        self.parameters.insert(String::from(key), Box::new(obj));
     }
 
     pub fn create(&mut self, key: &str) -> &mut ObjectJson {
@@ -39,9 +40,8 @@ impl ObjectJson {
 
     pub fn get(&mut self, key: &str) -> Option<TypeJson> {
         self.parameters
-            .iter_mut()
-            .find(|el| el.0 == key)
-            .map(|el| el.1.deref_mut())
+            .get_mut(key)
+            .map(|el| el.deref_mut())
             .map(|el|el.json())
     }
     
