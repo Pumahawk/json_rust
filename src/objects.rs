@@ -58,6 +58,10 @@ impl ObjectJson {
             _ => None,
         }
     }
+
+    pub fn iter_mut(&mut self) -> impl Iterator<Item=(&String, TypeJson)> {
+        self.parameters.iter_mut().map(|(k, v)|(k, v.json()))
+    }
 }
 
 impl Json for ObjectJson {
