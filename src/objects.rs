@@ -172,6 +172,18 @@ impl DerefMut for TextJson {
 
 pub struct NullJson;
 
+impl NullJson {
+    pub fn new() -> NullJson {
+        NullJson {}
+    }
+}
+
+impl Json for NullJson {
+    fn json(&mut self) -> TypeJson {
+        TypeJson::Null
+    }
+}
+
 pub fn object() -> ObjectJson {
     ObjectJson::new()
 }
@@ -186,6 +198,10 @@ pub fn text<T: ToString>(txt: T) -> TextJson {
 
 pub fn number(num: f32) -> NumberJson {
     NumberJson::from(num)
+}
+
+pub fn null() -> NullJson {
+    NullJson::new()
 }
 
 #[cfg(test)]
@@ -271,6 +287,16 @@ mod tests {
 
         match number.json() {
             TypeJson::Number(num) => assert_eq!(num, &6.2),
+            _ => assert!(false),
+        }
+    }
+    #[test]
+    fn null_number() {
+        let mut root = object();
+        root.set("key1", null());
+
+        match root.get("key1") {
+            Some(TypeJson::Null) => assert!(true),
             _ => assert!(false),
         }
     }
