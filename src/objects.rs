@@ -51,6 +51,13 @@ impl ObjectJson {
             _ => None,
         }
     }
+
+    pub fn as_text(&mut self, key: &str) -> Option<&mut str> {
+        match self.get(key) {
+            Some(TypeJson::Text(msg)) => Some(msg),
+            _ => None,
+        }
+    }
 }
 
 impl Json for ObjectJson {
@@ -170,6 +177,13 @@ mod tests {
                 Some(TypeJson::Text(msg)) => assert_eq!(msg, "hello World 2"),
                 _ => assert!(false), 
             }
+        
+        assert_eq!("hello World 2", root
+            .as_object("key2")
+            .and_then(|obj|obj.as_object("key-sub-1"))
+            .and_then(|obj|obj.as_text("field"))
+            .unwrap()
+        );
 
     }
     #[test]
