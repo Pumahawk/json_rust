@@ -10,6 +10,45 @@ pub enum TypeJson<'a> {
     Null,
 }
 
+impl <'a> TypeJson<'a> {
+
+    pub fn as_object(&mut self) -> Option<&mut ObjectJson> {
+        match self {
+            TypeJson::Object(obj) => Some(obj),
+            _ => None,
+        }
+    }
+
+    pub fn as_list(&mut self) -> Option<&mut ListJson> {
+        match self {
+            TypeJson::List(list) => Some(list),
+            _ => None,
+        }
+    }
+
+    pub fn as_text(&mut self) -> Option<&mut str> {
+        match self {
+            TypeJson::Text(msg) => Some(msg),
+            _ => None,
+        }
+    }
+
+    pub fn as_number(&mut self) -> Option<&mut f32> {
+        match self {
+            TypeJson::Number(num) => Some(num),
+            _ => None,
+        }
+    }
+
+    pub fn is_null(&mut self) -> bool {
+        match self {
+            TypeJson::Null => true,
+            _ => false,
+        }
+    }
+
+}
+
 pub trait Json {
     fn json(&mut self) -> TypeJson;
 }
