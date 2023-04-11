@@ -239,12 +239,23 @@ impl Automa for ObjectAutoma {
                 ObjectAtm::N4 => {
                     let str_automa = StrAutoma::new();
                     let json_automa = ObjectAutoma::new();
+                    let array_automa = ArrayAutoma::new();
                     let number_automa = NumberAutoma::new();
                     let null_automa = StringAutoma::from("null");
                     match c {
                         c if is_space(c) => continue,
                         c if json_automa.can_start(c) => {
                             let result = json_automa.process(c, &mut iter);
+                            match result {
+                                Ok(value) => {
+                                    json_object.set(&key.take().unwrap(), value);
+                                },
+                                Err(msg) => return Err(msg),
+                            }
+                            status = ObjectAtm::N5;
+                        },
+                        c if array_automa.can_start(c) => {
+                            let result = array_automa.process(c, &mut iter);
                             match result {
                                 Ok(value) => {
                                     json_object.set(&key.take().unwrap(), value);
@@ -532,6 +543,23 @@ mod test {
             Ok(mut json_object) => {
                 assert_eq!("input_automa_1", if let TypeJson::Text(msg) = json_object.get("key1").unwrap() {msg} else {"none"});
                 assert_eq!(33.2, if let TypeJson::Number(num) = json_object.get("key2").unwrap() {*num} else {0.0});
+            },
+            Err(msg) => {
+                assert_eq!("ok", msg);
+            }
+        }
+
+        let input = String::from("{\"key1\":\"input_automa_1\",\"key2\": [12]}");
+
+        match json_autom.start(&mut input.chars()) {
+            Ok(mut json_object) => {
+                match json_object.get("key2") {
+                    Some(TypeJson::List(list)) => match list.get(0) {
+                        Some(TypeJson::Number(num)) => assert_eq!(12.0, *num),
+                        _ => assert!(false),
+                    }
+                    _ => assert!(false),
+                }
             },
             Err(msg) => {
                 assert_eq!("ok", msg);
