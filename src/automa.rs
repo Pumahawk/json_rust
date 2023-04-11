@@ -173,21 +173,21 @@ impl Automa for NumberAutoma {
     }
 }
 
-enum JsonAtm {
+enum ObjectAtm {
     N1, N2, N3, N4, N5,
 }
 
-struct JsonAutoma {
+struct ObjectAutoma {
 }
 
-impl JsonAutoma {
-    fn new() -> JsonAutoma {
-        JsonAutoma {
+impl ObjectAutoma {
+    fn new() -> ObjectAutoma {
+        ObjectAutoma {
         }
     }
 }
 
-impl Automa for JsonAutoma {
+impl Automa for ObjectAutoma {
     type Input = char;
     type Output = json::ObjectJson;
 
@@ -197,20 +197,20 @@ impl Automa for JsonAutoma {
 
     fn start(&self, iter: &mut dyn Iterator<Item=Self::Input>) -> Result<Self::Output, String> {
         let mut iter: Box<dyn Iterator<Item=char>> = Box::new(std::iter::empty().chain(iter));
-        let mut status = JsonAtm::N1;
+        let mut status = ObjectAtm::N1;
         let mut key = None;
         let mut json_object = json::object();
         while let Some(c) = iter.next() {
             match status {
-                JsonAtm::N1 => {
+                ObjectAtm::N1 => {
                     match c {
                         '{' => {
-                            status = JsonAtm::N2;
+                            status = ObjectAtm::N2;
                         },
                         _ => return Err(String::from("invalid from node: N1"))
                     }
                 },
-                JsonAtm::N2 => {
+                ObjectAtm::N2 => {
                     let str_automa = StrAutoma::new();
                     match c {
                         c if is_space(c) => continue,
@@ -222,23 +222,23 @@ impl Automa for JsonAutoma {
                                 }
                                 Err(msg) => return Err(msg),
                             }
-                            status = JsonAtm::N3;
+                            status = ObjectAtm::N3;
                         },
                         _ => return Err(String::from("invalid from node: N2"))
                     }
                 },
-                JsonAtm::N3 => {
+                ObjectAtm::N3 => {
                     match c {
                         c if is_space(c) => continue,
                         ':' => {
-                            status = JsonAtm::N4;
+                            status = ObjectAtm::N4;
                         },
                         other => return Err(format!("invalid from node: N3. Value: {other}"))
                     }
                 },
-                JsonAtm::N4 => {
+                ObjectAtm::N4 => {
                     let str_automa = StrAutoma::new();
-                    let json_automa = JsonAutoma::new();
+                    let json_automa = ObjectAutoma::new();
                     let number_automa = NumberAutoma::new();
                     let null_automa = StringAutoma::from("null");
                     match c {
@@ -251,14 +251,14 @@ impl Automa for JsonAutoma {
                                 },
                                 Err(msg) => return Err(msg),
                             }
-                            status = JsonAtm::N5;
+                            status = ObjectAtm::N5;
                         },
                         c if null_automa.can_start(c) => {
                             let result = null_automa.process(c, &mut iter);
                             match result {
                                 Ok(_) => {
                                     json_object.set(&key.take().unwrap(), json::null());
-                                    status = JsonAtm::N5;
+                                    status = ObjectAtm::N5;
                                 },
                                 Err(msg) => return Err(msg),
                             }
@@ -271,14 +271,14 @@ impl Automa for JsonAutoma {
                                 },
                                 Err(msg) => return Err(msg),
                             }
-                            status = JsonAtm::N5;
+                            status = ObjectAtm::N5;
                         },
                         c if number_automa.can_start(c) => {
                             let result = number_automa.process(c, &mut iter);
                             match result {
                                 Ok((number, c)) => {
                                     json_object.set(&key.take().unwrap(), number);
-                                    status = JsonAtm::N5;
+                                    status = ObjectAtm::N5;
                                     if let Some(c) = c {
                                         iter = Box::new(std::iter::once(c).chain(iter));
                                     }
@@ -289,12 +289,12 @@ impl Automa for JsonAutoma {
                         _ => return Err(String::from("invalid from node: N4"))
                     }
                 },
-                JsonAtm::N5 => {
+                ObjectAtm::N5 => {
                     match c {
                         c if is_space(c) => continue,
                         '}' => return Ok(json_object),
                         ',' => {
-                            status = JsonAtm::N2;
+                            status = ObjectAtm::N2;
                         }
                         _ => return Err(String::from("invalid from node: N5"))
                     }
@@ -354,7 +354,7 @@ mod test {
 
     #[test]
     fn json_automa() {
-        let json_autom = JsonAutoma::new();
+        let json_autom = ObjectAutoma::new();
         let input = String::from("{\"key\":\"input_automa\"}");
 
         match json_autom.start(&mut input.chars()) {
