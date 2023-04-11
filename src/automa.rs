@@ -305,6 +305,109 @@ impl Automa for ObjectAutoma {
     }
 }
 
+enum ArrayAtm {
+    N1,
+    N2,
+    N3,
+}
+
+pub struct ArrayAutoma;
+
+impl ArrayAutoma {
+    pub fn new() -> ArrayAutoma {
+        ArrayAutoma {}
+    }
+}
+
+impl Automa for ArrayAutoma {
+    type Input = char;
+    type Output = json::ListJson;
+
+    fn can_start(&self, input: Self::Input) -> bool {
+        input == '['
+    }
+
+    fn start(&self, iter: &mut dyn Iterator<Item=Self::Input>) -> Result<Self::Output, String> {
+        let mut iter: Box<dyn Iterator<Item=char>> = Box::new(std::iter::empty().chain(iter));
+        let mut status = ArrayAtm::N1;
+        let mut json_array = json::array();
+        while let Some(c) = iter.next() {
+            match status {
+                ArrayAtm::N1 => {
+                    match c {
+                        '[' => {
+                            status = ArrayAtm::N2;
+                        },
+                        _ => return Err(String::from("Invalid ArrayAtm::N1")),
+                    }
+                },
+                ArrayAtm::N2 => {
+                    let string_automa = StrAutoma::new();
+                    let number_automa = NumberAutoma::new();
+                    let object_automa = ObjectAutoma::new();
+                    let array_automa = ArrayAutoma::new();
+                    let null_automa = StringAutoma::from("null");
+                    match c {
+                        ']' => return Ok(json_array),
+                        c if is_space(c) => {},
+                        c if string_automa.can_start(c) => match string_automa.process(c, &mut iter) {
+                            Ok(string) => {
+                                json_array.add(json::text(string));
+                                status = ArrayAtm::N3;
+                            },
+                            _ => return Err(String::from("Invalid ArrayAtm::N2, string_automa")),
+                        },
+                        c if number_automa.can_start(c) => match number_automa.process(c, &mut iter) {
+                            Ok((num, c)) => {
+                                json_array.add(num);
+                                if let Some(c) = c {
+                                    iter = Box::new(std::iter::once(c).chain(iter));
+                                }
+                                status = ArrayAtm::N3;
+                            }
+                            _ => return Err(String::from("Invalid ArrayAtm::N2, number_automa")),
+                        }
+                        c if object_automa.can_start(c) => match object_automa.process(c, &mut iter) {
+                            Ok(object) => {
+                                json_array.add(object);
+                                status = ArrayAtm::N3;
+                            }
+                            _ => return Err(String::from("Invalid ArrayAtm::N2, object_automa")),
+                        }
+                        c if array_automa.can_start(c) => match array_automa.process(c, &mut iter) {
+                            Ok(array) => {
+                                json_array.add(array);
+                                status = ArrayAtm::N3;
+                            }
+                            _ => return Err(String::from("Invalid ArrayAtm::N2, array_automa")),
+                        }
+                        c if null_automa.can_start(c) => match null_automa.process(c, &mut iter) {
+                            Ok(_) => {
+                                json_array.add(json::null());
+                                status = ArrayAtm::N3;
+                            }
+                            _ => return Err(String::from("Invalid ArrayAtm::N2, null_automa")),
+                        }
+                        _ => return Err(String::from("Invalid ArrayAtm::N2")),
+                    }
+                },
+                ArrayAtm::N3 => {
+                    match c {
+                        ']' => return Ok(json_array),
+                        ',' => {
+                            status = ArrayAtm::N2;
+                        },
+                        c if is_space(c) => {},
+                        _ => return Err(String::from("Invalid ArrayAtm::N3")),
+                    }
+                },
+            }
+        }
+        Err(String::from("unable to retrieve array"))
+    }
+
+}
+
 fn is_space(c: char) -> bool {
     match c {
         ' ' | '\t' | '\n' | '\r' => true,
