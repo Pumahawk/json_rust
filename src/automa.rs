@@ -166,7 +166,10 @@ impl Automa for NumberAutoma {
                 },
             }
         }
-        Err(String::from("Unable to retrieve number"))
+        match number_chars.iter().collect::<String>().parse() {
+            Ok(number) => Ok((json::number(number), None)),
+            _ => Err(String::from("Unable to retrieve number")),
+        }
     }
 }
 
@@ -236,6 +239,7 @@ impl Automa for JsonAutoma {
                 JsonAtm::N4 => {
                     let str_automa = StrAutoma::new();
                     let json_automa = JsonAutoma::new();
+                    let number_automa = NumberAutoma::new();
                     let null_automa = StringAutoma::from("null");
                     match c {
                         c if is_space(c) => continue,
@@ -269,6 +273,19 @@ impl Automa for JsonAutoma {
                             }
                             status = JsonAtm::N5;
                         },
+                        c if number_automa.can_start(c) => {
+                            let result = number_automa.process(c, &mut iter);
+                            match result {
+                                Ok((number, c)) => {
+                                    json_object.set(&key.take().unwrap(), number);
+                                    status = JsonAtm::N5;
+                                    if let Some(c) = c {
+                                        iter = Box::new(std::iter::once(c).chain(iter));
+                                    }
+                                },
+                                Err(msg) => return Err(msg),
+                            }
+                        }
                         _ => return Err(String::from("invalid from node: N4"))
                     }
                 },
@@ -430,5 +447,41 @@ mod test {
 
         assert_eq!(Some('c'), iter.next());
 
+    }
+
+    #[test]
+    fn number_automa() {
+        let number_automa = NumberAutoma::new();
+        
+        let input = String::from("1234.2123");
+        let mut iter = input.chars();
+        match number_automa.start(&mut iter) {
+            Ok((number, _)) => assert_eq!(1234.2123, *number),
+            _ => assert!(false),
+        }
+        
+        let input = String::from("001234.002123");
+        let mut iter = input.chars();
+        match number_automa.start(&mut iter) {
+            Ok((number, _)) => assert_eq!(1234.002123, *number),
+            _ => assert!(false),
+        }
+        
+        let input = String::from("001234.002123,");
+        let mut iter = input.chars();
+        match number_automa.start(&mut iter) {
+            Ok((number, Some(c))) => {
+                assert_eq!(1234.002123, *number);
+                assert_eq!(',', c);
+            },
+            _ => assert!(false),
+        }
+        
+        let input = String::from("001234");
+        let mut iter = input.chars();
+        match number_automa.start(&mut iter) {
+            Ok((number, _)) => assert_eq!(1234f32, *number),
+            _ => assert!(false),
+        }
     }
 }
