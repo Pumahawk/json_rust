@@ -103,6 +103,73 @@ impl Automa for StringAutoma {
     }
 }
 
+enum NumberAtm {
+    N1,
+    N2,
+    N3,
+}
+
+struct NumberAutoma;
+
+impl NumberAutoma {
+    pub fn new() -> NumberAutoma {
+        NumberAutoma {
+        }
+    }
+}
+
+impl Automa for NumberAutoma {
+    type Input=char;
+    type Output=(json::NumberJson, Option<Self::Input>);
+
+    fn can_start(&self, input: Self::Input) -> bool {
+        is_number(input)
+    }
+
+    fn start(&self, iter: &mut dyn Iterator<Item=Self::Input>) -> Result<Self::Output, String> {
+        let mut status = NumberAtm::N1;
+        let mut number_chars = Vec::new();
+        while let Some(c) = iter.next() {
+            match status {
+                NumberAtm::N1 => {
+                    match c {
+                        c if is_number(c) => {
+                            number_chars.push(c);
+                            status = NumberAtm::N2;
+                        }
+                        _ => return Err(String::from("Unable to read first number")),
+                    }
+                },
+                NumberAtm::N2 => {
+                    match c {
+                        c if is_number(c) => {
+                            number_chars.push(c);
+                        },
+                        '.' => {
+                            number_chars.push(c);
+                            status = NumberAtm::N3;
+                        },
+                        c => {
+                            return Ok((json::number(number_chars.iter().collect::<String>().parse().unwrap()), Some(c)));
+                        }
+                    }
+                },
+                NumberAtm::N3 => {
+                    match c {
+                        c if is_number(c) => {
+                            number_chars.push(c);
+                        },
+                        c => {
+                            return Ok((json::number(number_chars.iter().collect::<String>().parse().unwrap()), Some(c)));
+                        }
+                    }
+                },
+            }
+        }
+        Err(String::from("Unable to retrieve number"))
+    }
+}
+
 enum JsonAtm {
     N1, N2, N3, N4, N5,
 }
@@ -226,6 +293,10 @@ fn is_space(c: char) -> bool {
         ' ' | '\t' | '\n' | '\r' => true,
         _ => false,
     }
+}
+
+fn is_number(c: char) -> bool {
+    c >= '0' && c <= '9'
 }
 
 #[cfg(test)]
