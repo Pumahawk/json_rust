@@ -422,6 +422,18 @@ mod test {
                 assert_eq!("ok", msg);
             }
         }
+
+        let input = String::from("{\"key1\":\"input_automa_1\",\"key2\": 33.2}");
+
+        match json_autom.start(&mut input.chars()) {
+            Ok(mut json_object) => {
+                assert_eq!("input_automa_1", if let TypeJson::Text(msg) = json_object.get("key1").unwrap() {msg} else {"none"});
+                assert_eq!(33.2, if let TypeJson::Number(num) = json_object.get("key2").unwrap() {*num} else {0.0});
+            },
+            Err(msg) => {
+                assert_eq!("ok", msg);
+            }
+        }
     }
 
     #[test]
