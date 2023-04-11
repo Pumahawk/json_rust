@@ -599,4 +599,37 @@ mod test {
             _ => assert!(false),
         }
     }
+
+    #[test]
+    fn array_automa() {
+        let array_automa = ArrayAutoma::new();
+
+        let input = String::from("[\"Hello, World\", null, 2234.23, {\"key\": \"Value!\"}]");
+        let mut iter = input.chars();
+        let mut array = array_automa.start(&mut iter).unwrap();
+        match array.get(0) {
+            Some(TypeJson::Text(txt)) => assert_eq!("Hello, World", txt),
+            _ => assert!(false),
+        }
+        match array.get(1) {
+            Some(TypeJson::Null) => assert!(true),
+            _ => assert!(false),
+        }
+        match array.get(2) {
+            Some(TypeJson::Number(num)) => assert_eq!(2234.23, *num),
+            _ => assert!(false),
+        }
+        match array.get(3) {
+            Some(TypeJson::Object(obj)) => match obj.as_text("key") {
+                Some(msg) => assert_eq!("Value!", msg),
+                _ => assert!(false),
+            },
+            _ => assert!(false),
+        }
+
+        let input = String::from("[]");
+        let mut iter = input.chars();
+        let array = array_automa.start(&mut iter).unwrap();
+        assert_eq!(0, array.len());
+    }
 }
