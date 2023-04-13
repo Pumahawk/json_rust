@@ -22,8 +22,8 @@ impl ObjectJson {
         }
     }
 
-    pub fn set(&mut self, key: &str, obj: TypeJson) {
-        self.parameters.insert(String::from(key), obj);
+    pub fn set(&mut self, key: &str, obj: impl Into<TypeJson>) {
+        self.parameters.insert(String::from(key), obj.into());
     }
 
     pub fn create(&mut self, key: &str) -> &mut ObjectJson {
@@ -37,8 +37,6 @@ impl ObjectJson {
     pub fn get(&mut self, key: &str) -> Option<&mut TypeJson> {
         self.parameters
             .get_mut(key)
-            .map(|el| el.deref_mut())
-            .map(|el|el.json())
     }
     
     pub fn as_object(&mut self, key: &str) -> Option<&mut ObjectJson> {
@@ -67,7 +65,7 @@ impl ObjectJson {
     }
 
     pub fn values(&mut self) -> impl Iterator<Item=&mut TypeJson> {
-        self.iter_mut()
+        self.iter_mut().map(|(_, value)| value)
     }
 
     pub fn keys(&mut self) -> impl Iterator<Item=&String> {
@@ -96,8 +94,8 @@ impl ListJson {
         self.list.len()
     }
 
-    pub fn add(&mut self, obj: TypeJson) {
-        self.list.push(obj);
+    pub fn add(&mut self, obj: impl Into<TypeJson>) {
+        self.list.push(obj.into());
     }
 
     pub fn get(&mut self, index: usize) -> Option<&mut TypeJson> {
@@ -171,8 +169,8 @@ impl <T: ToString> From<T> for TextJson {
 }
 
 impl From<TextJson> for TypeJson {
-    fn from(value: NumberJson) -> TypeJson {
-        TypeJson::Text(*value)
+    fn from(value: TextJson) -> TypeJson {
+        TypeJson::Text(value.value)
     }
 }
 
@@ -197,8 +195,8 @@ impl NullJson {
     }
 }
 
-impl Json for NullJson {
-    fn json(&mut self) -> TypeJson {
+impl From<NullJson> for TypeJson {
+    fn from(_: NullJson) -> TypeJson {
         TypeJson::Null
     }
 }
@@ -304,8 +302,8 @@ mod tests {
         *number = 6.2;
         assert_eq!(*number, 6.2);
 
-        match number.json() {
-            TypeJson::Number(num) => assert_eq!(num, &6.2),
+        match TypeJson::from(number) {
+            TypeJson::Number(num) => assert_eq!(num, 6.2),
             _ => assert!(false),
         }
     }
