@@ -419,6 +419,48 @@ impl Automa for ArrayAutoma {
 
 }
 
+enum KeyParseQueryAtm {
+    N1,
+    N2,
+}
+
+pub enum KeyParseQueryToken {
+    Key(String),
+    Index(usize),
+}
+
+pub struct KeyParseQueryAutoma<'a, T> {
+    status: KeyParseQueryAtm,
+    iter: &'a mut T,
+}
+
+impl <'a, T: Iterator<Item=char>> KeyParseQueryAutoma<'a, T> {
+    pub fn new(iter: &mut T) -> KeyParseQueryAutoma<T> {
+        KeyParseQueryAutoma {
+            status: KeyParseQueryAtm::N1,
+            iter,
+        }
+    }
+}
+
+impl <'a, T: Iterator<Item=char>> Iterator for KeyParseQueryAutoma<'a, T> {
+    type Item=Result<KeyParseQueryToken, &'static str>;
+    fn next(&mut self) -> Option<<Self as Iterator>::Item> {
+        while let Some(c) = self.iter.next() {
+            match &self.status {
+                KeyParseQueryAtm::N1 => match c {
+                    '/' => {
+                        todo!();
+                    }
+                    _ => return Some(Err("Invalid starter character. Valid: /")),
+                },
+                KeyParseQueryAtm::N2 => return None,
+            }
+        }
+        None
+    }
+}
+
 fn is_space(c: char) -> bool {
     match c {
         ' ' | '\t' | '\n' | '\r' => true,
@@ -428,6 +470,10 @@ fn is_space(c: char) -> bool {
 
 fn is_number(c: char) -> bool {
     c >= '0' && c <= '9'
+}
+
+fn is_char(c: char) -> bool {
+    (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
 }
 
 pub fn parser(mut iter: impl Iterator<Item=char>) -> Result<json::ObjectJson, String> {
