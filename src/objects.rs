@@ -10,6 +10,63 @@ pub enum TypeJson {
     Null,
 }
 
+impl TypeJson {
+    pub fn as_object(&self) -> Option<&ObjectJson> {
+        match self {
+            TypeJson::Object(obj) => Some(obj),
+            _ => None,
+        }
+    }
+    pub fn as_object_mut(&mut self) -> Option<&ObjectJson> {
+        match self {
+            TypeJson::Object(obj) => Some(obj),
+            _ => None,
+        }
+    }
+    pub fn as_list(&self) -> Option<&ListJson> {
+        match self {
+            TypeJson::List(list) => Some(list),
+            _ => None,
+        }
+    }
+    pub fn as_list_mut(&mut self) -> Option<&mut ListJson> {
+        match self {
+            TypeJson::List(list) => Some(list),
+            _ => None,
+        }
+    }
+    pub fn as_text(&self) -> Option<&str> {
+        match self {
+            TypeJson::Text(txt) => Some(txt),
+            _ => None,
+        }
+    }
+    pub fn as_text_mut(&mut self) -> Option<&mut str> {
+        match self {
+            TypeJson::Text(txt) => Some(txt),
+            _ => None,
+        }
+    }
+    pub fn as_number(&self) -> Option<&f32> {
+        match self {
+            TypeJson::Number(num) => Some(num),
+            _ => None,
+        }
+    }
+    pub fn as_number_mut(&mut self) -> Option<&mut f32> {
+        match self {
+            TypeJson::Number(num) => Some(num),
+            _ => None,
+        }
+    }
+    pub fn is_null(&self) -> bool {
+        match self {
+            TypeJson::Null => true,
+            _ => false,
+        }
+    }
+}
+
 pub struct ObjectJson {
     parameters: HashMap<String, TypeJson>,
 }
@@ -49,6 +106,13 @@ impl ObjectJson {
     pub fn as_text(&mut self, key: &str) -> Option<&mut str> {
         match self.get(key) {
             Some(TypeJson::Text(msg)) => Some(msg),
+            _ => None,
+        }
+    }
+
+    pub fn as_list(&mut self, key: &str) -> Option<&mut ListJson> {
+        match self.get(key) {
+            Some(TypeJson::List(list)) => Some(list),
             _ => None,
         }
     }

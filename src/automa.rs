@@ -430,11 +430,16 @@ fn is_number(c: char) -> bool {
     c >= '0' && c <= '9'
 }
 
+pub fn parser(mut iter: impl Iterator<Item=char>) -> Result<json::ObjectJson, String> {
+    ObjectAutoma::new().start(&mut iter)
+}
+
 #[cfg(test)]
 mod test {
 
     use crate::objects::*;
     use crate::automa::*;
+    use crate as json;
 
     #[test]
     fn is_space_test() {
@@ -659,5 +664,22 @@ mod test {
         let mut iter = input.chars();
         let array = array_automa.start(&mut iter).unwrap();
         assert_eq!(0, array.len());
+    }
+
+    #[test]
+    fn complete_json() {
+        let input = String::from(r###"{
+            "name": "Foo",
+            "username": "Paa",
+            "age": 32.0,
+            "tags": ["t1", "t2"]
+        }"###);
+        let mut user = json::parser(input.chars()).unwrap();
+        assert_eq!("Foo", user.as_text("name").unwrap());
+        assert_eq!("Paa", user.as_text("username").unwrap());
+        assert_eq!(32.0, *user.as_number("age").unwrap());
+        let tags = user.as_list("tags").unwrap();
+        assert_eq!("t1", tags.get(0).unwrap());
+        assert_eq!("t2", tags.get(1).unwrap());
     }
 }
