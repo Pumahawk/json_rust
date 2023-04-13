@@ -34,7 +34,7 @@ impl ObjectJson {
         }
     }
 
-    pub fn get(&mut self, key: &str) -> Option<&TypeJson> {
+    pub fn get(&mut self, key: &str) -> Option<&mut TypeJson> {
         self.parameters
             .get_mut(key)
             .map(|el| el.deref_mut())
@@ -62,12 +62,12 @@ impl ObjectJson {
         }
     }
 
-    pub fn iter_mut(&mut self) -> impl Iterator<Item=(&String, TypeJson)> {
-        self.parameters.iter_mut().map(|(k, v)|(k, v.json()))
+    pub fn iter_mut(&mut self) -> impl Iterator<Item=(&String, &mut TypeJson)> {
+        self.parameters.iter_mut()
     }
 
-    pub fn values(&mut self) -> impl Iterator<Item=TypeJson> {
-        self.iter_mut().map(|(_, value)|value)
+    pub fn values(&mut self) -> impl Iterator<Item=&mut TypeJson> {
+        self.iter_mut()
     }
 
     pub fn keys(&mut self) -> impl Iterator<Item=&String> {
@@ -75,14 +75,14 @@ impl ObjectJson {
     }
 }
 
-impl Json for ObjectJson {
-    fn json(&mut self) -> TypeJson {
-        TypeJson::Object(self)
+impl From<ObjectJson> for TypeJson {
+    fn from(object: ObjectJson) -> TypeJson {
+        TypeJson::Object(object)
     }
 }
 
 pub struct ListJson {
-    list: Vec<Box<dyn Json>>,
+    list: Vec<TypeJson>,
 }
 
 impl ListJson {
@@ -96,22 +96,22 @@ impl ListJson {
         self.list.len()
     }
 
-    pub fn add<T: Json + 'static>(&mut self, obj: T) {
-        self.list.push(Box::new(obj));
+    pub fn add(&mut self, obj: TypeJson) {
+        self.list.push(obj);
     }
 
-    pub fn get(&mut self, index: usize) -> Option<TypeJson> {
-        self.list.get_mut(index).map(|b|&mut **b).map(|b|b.json())
+    pub fn get(&mut self, index: usize) -> Option<&mut TypeJson> {
+        self.list.get_mut(index)
     }
 
-    pub fn iter_mut(&mut self) -> impl Iterator<Item=TypeJson> {
-        self.list.iter_mut().map(|b|&mut **b).map(|b|b.json())
+    pub fn iter_mut(&mut self) -> impl Iterator<Item=&mut TypeJson> {
+        self.list.iter_mut()
     }
 }
 
-impl Json for ListJson {
-    fn json(&mut self) -> TypeJson {
-        TypeJson::List(self)
+impl From<ListJson> for TypeJson {
+    fn from(list: ListJson) -> TypeJson {
+        TypeJson::List(list)
     }
 }
 
@@ -133,9 +133,9 @@ impl From<f32> for NumberJson {
     }
 }
 
-impl Json for NumberJson {
-    fn json(&mut self) -> TypeJson {
-        TypeJson::Number(&mut self.value)
+impl From<NumberJson> for TypeJson {
+    fn from(value: NumberJson) -> TypeJson {
+        TypeJson::Number(*value)
     }
 }
 
@@ -170,9 +170,9 @@ impl <T: ToString> From<T> for TextJson {
     }
 }
 
-impl Json for TextJson {
-    fn json(&mut self) -> TypeJson {
-        TypeJson::Text(&mut self.value)
+impl From<TextJson> for TypeJson {
+    fn from(value: NumberJson) -> TypeJson {
+        TypeJson::Text(*value)
     }
 }
 
