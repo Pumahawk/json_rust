@@ -120,7 +120,7 @@ impl NumberAutoma {
 
 impl Automa for NumberAutoma {
     type Input=char;
-    type Output=(json::NumberJson, Option<Self::Input>);
+    type Output=(f32, Option<Self::Input>);
 
     fn can_start(&self, input: Self::Input) -> bool {
         is_number(input)
@@ -150,7 +150,7 @@ impl Automa for NumberAutoma {
                             status = NumberAtm::N3;
                         },
                         c => {
-                            return Ok((json::number(number_chars.iter().collect::<String>().parse().unwrap()), Some(c)));
+                            return Ok((number_chars.iter().collect::<String>().parse().unwrap(), Some(c)));
                         }
                     }
                 },
@@ -160,14 +160,14 @@ impl Automa for NumberAutoma {
                             number_chars.push(c);
                         },
                         c => {
-                            return Ok((json::number(number_chars.iter().collect::<String>().parse().unwrap()), Some(c)));
+                            return Ok((number_chars.iter().collect::<String>().parse().unwrap(), Some(c)));
                         }
                     }
                 },
             }
         }
         match number_chars.iter().collect::<String>().parse() {
-            Ok(number) => Ok((json::number(number), None)),
+            Ok(number) => Ok((number, None)),
             _ => Err(String::from("Unable to retrieve number")),
         }
     }
@@ -278,7 +278,7 @@ impl Automa for ObjectAutoma {
                             let result = str_automa.process(c, &mut iter);
                             match result {
                                 Ok(value) => {
-                                    json_object.set(&key.take().unwrap(), json::text(value));
+                                    json_object.set(&key.take().unwrap(), value);
                                 },
                                 Err(msg) => return Err(msg),
                             }
@@ -363,7 +363,7 @@ impl Automa for ArrayAutoma {
                         c if is_space(c) => {},
                         c if string_automa.can_start(c) => match string_automa.process(c, &mut iter) {
                             Ok(string) => {
-                                json_array.add(json::text(string));
+                                json_array.add(string);
                                 status = ArrayAtm::N3;
                             },
                             _ => return Err(String::from("Invalid ArrayAtm::N2, string_automa")),
@@ -604,14 +604,14 @@ mod test {
         let input = String::from("1234.2123");
         let mut iter = input.chars();
         match number_automa.start(&mut iter) {
-            Ok((number, _)) => assert_eq!(1234.2123, *number),
+            Ok((number, _)) => assert_eq!(1234.2123, number),
             _ => assert!(false),
         }
         
         let input = String::from("001234.002123");
         let mut iter = input.chars();
         match number_automa.start(&mut iter) {
-            Ok((number, _)) => assert_eq!(1234.002123, *number),
+            Ok((number, _)) => assert_eq!(1234.002123, number),
             _ => assert!(false),
         }
         
@@ -619,7 +619,7 @@ mod test {
         let mut iter = input.chars();
         match number_automa.start(&mut iter) {
             Ok((number, Some(c))) => {
-                assert_eq!(1234.002123, *number);
+                assert_eq!(1234.002123, number);
                 assert_eq!(',', c);
             },
             _ => assert!(false),
@@ -628,7 +628,7 @@ mod test {
         let input = String::from("001234");
         let mut iter = input.chars();
         match number_automa.start(&mut iter) {
-            Ok((number, _)) => assert_eq!(1234f32, *number),
+            Ok((number, _)) => assert_eq!(1234f32, number),
             _ => assert!(false),
         }
     }
@@ -679,7 +679,7 @@ mod test {
         assert_eq!("Paa", user.as_text("username").unwrap());
         assert_eq!(32.0, *user.as_number("age").unwrap());
         let tags = user.as_list("tags").unwrap();
-        assert_eq!("t1", tags.get(0).unwrap());
-        assert_eq!("t2", tags.get(1).unwrap());
+        assert_eq!("t1", tags.get(0).unwrap().as_text().unwrap());
+        assert_eq!("t2", tags.get(1).unwrap().as_text().unwrap());
     }
 }
