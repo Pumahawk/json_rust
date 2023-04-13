@@ -2,59 +2,16 @@ use std::collections::HashMap;
 use std::ops::Deref;
 use std::ops::DerefMut;
 
-pub enum TypeJson<'a> {
-    Object(&'a mut ObjectJson),
-    List(&'a mut ListJson),
-    Text(&'a mut str),
-    Number(&'a mut f32),
+pub enum TypeJson {
+    Object(ObjectJson),
+    List(ListJson),
+    Text(String),
+    Number(f32),
     Null,
 }
 
-impl <'a> TypeJson<'a> {
-
-    pub fn as_object(&mut self) -> Option<&mut ObjectJson> {
-        match self {
-            TypeJson::Object(obj) => Some(obj),
-            _ => None,
-        }
-    }
-
-    pub fn as_list(&mut self) -> Option<&mut ListJson> {
-        match self {
-            TypeJson::List(list) => Some(list),
-            _ => None,
-        }
-    }
-
-    pub fn as_text(&mut self) -> Option<&mut str> {
-        match self {
-            TypeJson::Text(msg) => Some(msg),
-            _ => None,
-        }
-    }
-
-    pub fn as_number(&mut self) -> Option<&mut f32> {
-        match self {
-            TypeJson::Number(num) => Some(num),
-            _ => None,
-        }
-    }
-
-    pub fn is_null(&mut self) -> bool {
-        match self {
-            TypeJson::Null => true,
-            _ => false,
-        }
-    }
-
-}
-
-pub trait Json {
-    fn json(&mut self) -> TypeJson;
-}
-
 pub struct ObjectJson {
-    parameters: HashMap<String, Box<dyn Json>>,
+    parameters: HashMap<String, TypeJson>,
 }
 
 impl ObjectJson {
@@ -65,8 +22,8 @@ impl ObjectJson {
         }
     }
 
-    pub fn set<T: Json + 'static>(&mut self, key: &str, obj: T) {
-        self.parameters.insert(String::from(key), Box::new(obj));
+    pub fn set(&mut self, key: &str, obj: TypeJson) {
+        self.parameters.insert(String::from(key), obj);
     }
 
     pub fn create(&mut self, key: &str) -> &mut ObjectJson {
@@ -77,7 +34,7 @@ impl ObjectJson {
         }
     }
 
-    pub fn get(&mut self, key: &str) -> Option<TypeJson> {
+    pub fn get(&mut self, key: &str) -> Option<&TypeJson> {
         self.parameters
             .get_mut(key)
             .map(|el| el.deref_mut())
