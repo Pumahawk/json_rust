@@ -147,6 +147,22 @@ impl ListJson {
         self.list.push(obj.into());
     }
 
+    pub fn object(&mut self) -> &mut ObjectJson {
+        self.add(ObjectJson::new());
+        match self.list.last_mut() {
+            Some(TypeJson::Object(node)) => node,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn list(&mut self) -> &mut ListJson {
+        self.add(ListJson::new());
+        match self.list.last_mut() {
+            Some(TypeJson::List(node)) => node,
+            _ => unreachable!(),
+        }
+    }
+
     pub fn get(&self, index: usize) -> Option<&TypeJson> {
         self.list.get(index)
     }
@@ -358,6 +374,10 @@ mod tests {
         let list = node.list("n6");
         list.add("message-1");
         list.add("message-2");
+        let obj = list.object();
+        obj.set("k1", "v1");
+        let array = list.list();
+        array.add("v1");
 
         let root = root.into();
         let reader = ReaderJson::new(&root);
