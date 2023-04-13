@@ -233,6 +233,16 @@ impl <'a> ReaderJson<'a> {
         }
     }
 
+    pub fn index(&self, i: usize) -> ReaderJson {
+        match self.root {
+            Some(TypeJson::List(list)) => match list.get(i) {
+                Some(node) =>  ReaderJson::new(node),
+                _ => ReaderJson::empty(),
+            }
+            _ => ReaderJson::empty(),
+        }
+    }
+
     pub fn json(&self) -> &TypeJson {
         match self.root {
             Some(node) => node,
@@ -335,11 +345,16 @@ mod tests {
         let node = root.create("k2");
         node.set("n3", "value1");
         node.set("n4", "value2");
+        let mut list = array();
+        list.add("message-1");
+        list.add("message-2");
         let node = node.create("k3");
         node.set("n5", "value-sub1");
+        node.set("n6", list);
 
         let root = root.into();
         let reader = ReaderJson::new(&root);
         assert_eq!(Some("value-sub1"), reader.field("k2").field("k3").field("n5").json().as_text());
+        assert_eq!(Some("message-2"), reader.field("k2").field("k3").field("n6").index(1).json().as_text());
     }
 }
