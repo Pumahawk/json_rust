@@ -91,6 +91,14 @@ impl ObjectJson {
         }
     }
 
+    pub fn list(&mut self, key: &str) -> &mut ListJson {
+        self.set(key, ListJson::new());
+        match self.get_mut(key) {
+            Some(TypeJson::List(list)) => list,
+            _ => unreachable!(),
+        }
+    }
+
     pub fn get(&self, key: &str) -> Option<&TypeJson> {
         self.parameters
             .get(key)
@@ -345,12 +353,11 @@ mod tests {
         let node = root.object("k2");
         node.set("n3", "value1");
         node.set("n4", "value2");
-        let mut list = array();
-        list.add("message-1");
-        list.add("message-2");
         let node = node.object("k3");
         node.set("n5", "value-sub1");
-        node.set("n6", list);
+        let list = node.list("n6");
+        list.add("message-1");
+        list.add("message-2");
 
         let root = root.into();
         let reader = ReaderJson::new(&root);
