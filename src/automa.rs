@@ -422,11 +422,22 @@ impl Automa for ArrayAutoma {
 enum KeyParseQueryAtm {
     N1,
     N2,
+    N3,
+    N4,
+    N5,
+    N6,
 }
 
 pub enum KeyParseQueryToken {
     Key(String),
     Index(usize),
+    Error(String)
+}
+
+impl From<&str> for KeyParseQueryToken {
+    fn from(value: &str) -> Self {
+        KeyParseQueryToken::Error(String::from(value))
+    }
 }
 
 pub struct KeyParseQueryAutoma<'a, T> {
@@ -444,7 +455,7 @@ impl <'a, T: Iterator<Item=char>> KeyParseQueryAutoma<'a, T> {
 }
 
 impl <'a, T: Iterator<Item=char>> Iterator for KeyParseQueryAutoma<'a, T> {
-    type Item=Result<KeyParseQueryToken, &'static str>;
+    type Item=KeyParseQueryToken;
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         while let Some(c) = self.iter.next() {
             match &self.status {
@@ -452,12 +463,24 @@ impl <'a, T: Iterator<Item=char>> Iterator for KeyParseQueryAutoma<'a, T> {
                     '/' => {
                         todo!();
                     }
-                    _ => return Some(Err("Invalid starter character. Valid: /")),
+                    _ => return Some("Invalid starter character. Valid: /".into()),
                 },
-                KeyParseQueryAtm::N2 => return None,
+                KeyParseQueryAtm::N2 => todo!(),
+                KeyParseQueryAtm::N3 => todo!(),
+                KeyParseQueryAtm::N4 => todo!(),
+                KeyParseQueryAtm::N5 => todo!(),
+                KeyParseQueryAtm::N6 => todo!(),
             }
         }
-        None
+        match &self.status {
+            KeyParseQueryAtm::N1 => None,
+            KeyParseQueryAtm::N6 => None,
+            KeyParseQueryAtm::N3 => {
+                self.status = KeyParseQueryAtm::N6;
+                todo!(); // return Some(String)
+            },
+            _ => Some("Invalid EOF status".into()),
+        }
     }
 }
 
