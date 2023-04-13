@@ -325,4 +325,21 @@ mod tests {
             _ => assert!(false),
         }
     }
+
+    #[test]
+    fn reader_json() {
+        let mut root = object();
+        let node = root.create("k1");
+        node.set("n1", "value1");
+        node.set("n2", "value2");
+        let node = root.create("k2");
+        node.set("n3", "value1");
+        node.set("n4", "value2");
+        let node = node.create("k3");
+        node.set("n5", "value-sub1");
+
+        let root = root.into();
+        let reader = ReaderJson::new(&root);
+        assert_eq!(Some("value-sub1"), reader.field("k2").field("k3").field("n5").json().as_text());
+    }
 }
