@@ -15,7 +15,7 @@ impl TypeJson {
             _ => None,
         }
     }
-    pub fn as_object_mut(&mut self) -> Option<&ObjectJson> {
+    pub fn as_object_mut(&mut self) -> Option<&mut ObjectJson> {
         match self {
             TypeJson::Object(obj) => Some(obj),
             _ => None,
@@ -83,55 +83,32 @@ impl ObjectJson {
 
     pub fn create(&mut self, key: &str) -> &mut ObjectJson {
         self.set(key, ObjectJson::new());
-        match self.get(key) {
+        match self.get_mut(key) {
             Some(TypeJson::Object(obj)) => obj,
             _ => unreachable!(),
         }
     }
 
-    pub fn get(&mut self, key: &str) -> Option<&mut TypeJson> {
+    pub fn get(&self, key: &str) -> Option<&TypeJson> {
+        self.parameters
+            .get(key)
+    }
+
+    pub fn get_mut(&mut self, key: &str) -> Option<&mut TypeJson> {
         self.parameters
             .get_mut(key)
     }
-    
-    pub fn as_object(&mut self, key: &str) -> Option<&mut ObjectJson> {
-        match self.get(key) {
-            Some(TypeJson::Object(obj)) => Some(obj),
-            _ => None,
-        }
-    }
 
-    pub fn as_text(&mut self, key: &str) -> Option<&mut str> {
-        match self.get(key) {
-            Some(TypeJson::Text(msg)) => Some(msg),
-            _ => None,
-        }
-    }
-
-    pub fn as_list(&mut self, key: &str) -> Option<&mut ListJson> {
-        match self.get(key) {
-            Some(TypeJson::List(list)) => Some(list),
-            _ => None,
-        }
-    }
-
-    pub fn as_number(&mut self, key: &str) -> Option<&mut f32> {
-        match self.get(key) {
-            Some(TypeJson::Number(number)) => Some(number),
-            _ => None,
-        }
+    pub fn iter(&self) -> impl Iterator<Item=(&String, &TypeJson)> {
+        self.parameters.iter()
     }
 
     pub fn iter_mut(&mut self) -> impl Iterator<Item=(&String, &mut TypeJson)> {
         self.parameters.iter_mut()
     }
 
-    pub fn values(&mut self) -> impl Iterator<Item=&mut TypeJson> {
-        self.iter_mut().map(|(_, value)| value)
-    }
-
-    pub fn keys(&mut self) -> impl Iterator<Item=&String> {
-        self.iter_mut().map(|(key, _)|key)
+    pub fn keys(&self) -> impl Iterator<Item=&String> {
+        self.iter().map(|(key, _)|key)
     }
 }
 
@@ -160,8 +137,16 @@ impl ListJson {
         self.list.push(obj.into());
     }
 
-    pub fn get(&mut self, index: usize) -> Option<&mut TypeJson> {
+    pub fn get(&self, index: usize) -> Option<&TypeJson> {
+        self.list.get(index)
+    }
+
+    pub fn get_mut(&mut self, index: usize) -> Option<&mut TypeJson> {
         self.list.get_mut(index)
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item=&TypeJson> {
+        self.list.iter()
     }
 
     pub fn iter_mut(&mut self) -> impl Iterator<Item=&mut TypeJson> {
@@ -247,17 +232,22 @@ mod tests {
         }
 
         match root
-            .as_object("key2")
-            .and_then(|obj|obj.as_object("key-sub-1"))
+            .get("key2")
+            .and_then(|obj|obj.as_object())
+            .and_then(|obj|obj.get("key-sub-1"))
+            .and_then(|obj|obj.as_object())
             .and_then(|obj|obj.get("field")) {
                 Some(TypeJson::Text(msg)) => assert_eq!(msg, "hello World 2"),
                 _ => assert!(false), 
             }
         
         assert_eq!("hello World 2", root
-            .as_object("key2")
-            .and_then(|obj|obj.as_object("key-sub-1"))
-            .and_then(|obj|obj.as_text("field"))
+            .get("key2")
+            .and_then(|obj|obj.as_object())
+            .and_then(|obj|obj.get("key-sub-1"))
+            .and_then(|obj|obj.as_object())
+            .and_then(|obj|obj.get("field"))
+            .and_then(|obj|obj.as_text())
             .unwrap()
         );
 

@@ -477,7 +477,7 @@ mod test {
         let input = String::from("{\"key\":\"input_automa\"}");
 
         match json_autom.start(&mut input.chars()) {
-            Ok(mut json_object) => {
+            Ok(json_object) => {
                 assert_eq!("input_automa", if let TypeJson::Text(msg) = json_object.get("key").unwrap() {msg} else {"none"});
             },
             Err(msg) => {
@@ -488,7 +488,7 @@ mod test {
         let input = String::from("{\"key1\":\"input_automa_1\",\"key2\":\"input_automa_2\"}");
 
         match json_autom.start(&mut input.chars()) {
-            Ok(mut json_object) => {
+            Ok(json_object) => {
                 assert_eq!("input_automa_1", if let TypeJson::Text(msg) = json_object.get("key1").unwrap() {msg} else {"none"});
                 assert_eq!("input_automa_2", if let TypeJson::Text(msg) = json_object.get("key2").unwrap() {msg} else {"none"});
             },
@@ -500,7 +500,7 @@ mod test {
         let input = String::from("{  \"key1\" \t : \n \"input_automa_1\"  \t,\r \"key2\":\"input_automa_2\"}");
 
         match json_autom.start(&mut input.chars()) {
-            Ok(mut json_object) => {
+            Ok(json_object) => {
                 assert_eq!("input_automa_1", if let TypeJson::Text(msg) = json_object.get("key1").unwrap() {msg} else {"none"});
                 assert_eq!("input_automa_2", if let TypeJson::Text(msg) = json_object.get("key2").unwrap() {msg} else {"none"});
             },
@@ -512,7 +512,7 @@ mod test {
         let input = String::from("{\"key1\":\"input_automa_1\",\"key2\":{\"key\":\"input_automa\"}}");
 
         match json_autom.start(&mut input.chars()) {
-            Ok(mut json_object) => {
+            Ok(json_object) => {
                 assert_eq!("input_automa_1", if let TypeJson::Text(msg) = json_object.get("key1").unwrap() {msg} else {"none"});
                 let jo = json_object.get("key2").unwrap();
                 match jo {
@@ -533,7 +533,7 @@ mod test {
         let input = String::from("{\"key1\":\"input_automa_1\",\"key2\": null}");
 
         match json_autom.start(&mut input.chars()) {
-            Ok(mut json_object) => {
+            Ok(json_object) => {
                 assert_eq!("input_automa_1", if let TypeJson::Text(msg) = json_object.get("key1").unwrap() {msg} else {"none"});
                 assert_eq!("null", if let TypeJson::Null = json_object.get("key2").unwrap() {"null"} else {"none"});
             },
@@ -545,7 +545,7 @@ mod test {
         let input = String::from("{\"key1\":\"input_automa_1\",\"key2\": 33.2}");
 
         match json_autom.start(&mut input.chars()) {
-            Ok(mut json_object) => {
+            Ok(json_object) => {
                 assert_eq!("input_automa_1", if let TypeJson::Text(msg) = json_object.get("key1").unwrap() {msg} else {"none"});
                 assert_eq!(33.2, if let TypeJson::Number(num) = json_object.get("key2").unwrap() {*num} else {0.0});
             },
@@ -557,7 +557,7 @@ mod test {
         let input = String::from("{\"key1\":\"input_automa_1\",\"key2\": [12]}");
 
         match json_autom.start(&mut input.chars()) {
-            Ok(mut json_object) => {
+            Ok(json_object) => {
                 match json_object.get("key2") {
                     Some(TypeJson::List(list)) => match list.get(0) {
                         Some(TypeJson::Number(num)) => assert_eq!(12.0, *num),
@@ -639,7 +639,7 @@ mod test {
 
         let input = String::from("[\"Hello, World\", null, 2234.23, {\"key\": \"Value!\"}]");
         let mut iter = input.chars();
-        let mut array = array_automa.start(&mut iter).unwrap();
+        let array = array_automa.start(&mut iter).unwrap();
         match array.get(0) {
             Some(TypeJson::Text(txt)) => assert_eq!("Hello, World", txt),
             _ => assert!(false),
@@ -653,7 +653,7 @@ mod test {
             _ => assert!(false),
         }
         match array.get(3) {
-            Some(TypeJson::Object(obj)) => match obj.as_text("key") {
+            Some(TypeJson::Object(obj)) => match obj.get("key").unwrap().as_text() {
                 Some(msg) => assert_eq!("Value!", msg),
                 _ => assert!(false),
             },
@@ -674,11 +674,11 @@ mod test {
             "age": 32.0,
             "tags": ["t1", "t2"]
         }"###);
-        let mut user = json::parser(input.chars()).unwrap();
-        assert_eq!("Foo", user.as_text("name").unwrap());
-        assert_eq!("Paa", user.as_text("username").unwrap());
-        assert_eq!(32.0, *user.as_number("age").unwrap());
-        let tags = user.as_list("tags").unwrap();
+        let user = json::parser(input.chars()).unwrap();
+        assert_eq!("Foo", user.get("name").unwrap().as_text().unwrap());
+        assert_eq!("Paa", user.get("username").unwrap().as_text().unwrap());
+        assert_eq!(32.0, *user.get("age").unwrap().as_number().unwrap());
+        let tags = user.get("tags").unwrap().as_list().unwrap();
         assert_eq!("t1", tags.get(0).unwrap().as_text().unwrap());
         assert_eq!("t2", tags.get(1).unwrap().as_text().unwrap());
     }
