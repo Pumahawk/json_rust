@@ -83,7 +83,7 @@ impl ObjectJson {
         self.parameters.insert(String::from(key), obj.into());
     }
 
-    pub fn create(&mut self, key: &str) -> &mut ObjectJson {
+    pub fn object(&mut self, key: &str) -> &mut ObjectJson {
         self.set(key, ObjectJson::new());
         match self.get_mut(key) {
             Some(TypeJson::Object(obj)) => obj,
@@ -265,7 +265,7 @@ mod tests {
         obj1.set("field", "hello World");
         root.set("key1", obj1);
         {
-            let obj2 = root.create("key2");
+            let obj2 = root.object("key2");
             obj_sub_1.set("field", "hello World 2");
             obj2.set("key-sub-1", obj_sub_1);
         }
@@ -339,16 +339,16 @@ mod tests {
     #[test]
     fn reader_json() {
         let mut root = object();
-        let node = root.create("k1");
+        let node = root.object("k1");
         node.set("n1", "value1");
         node.set("n2", "value2");
-        let node = root.create("k2");
+        let node = root.object("k2");
         node.set("n3", "value1");
         node.set("n4", "value2");
         let mut list = array();
         list.add("message-1");
         list.add("message-2");
-        let node = node.create("k3");
+        let node = node.object("k3");
         node.set("n5", "value-sub1");
         node.set("n6", list);
 
