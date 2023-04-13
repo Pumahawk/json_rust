@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+const NULL_JSON: TypeJson = TypeJson::Null;
+
 pub enum TypeJson {
     Object(ObjectJson),
     List(ListJson),
@@ -203,6 +205,43 @@ pub fn array() -> ListJson {
 pub fn null() -> NullJson {
     NullJson::new()
 }
+
+pub struct ReaderJson<'a> {
+    root: Option<&'a TypeJson>,
+}
+
+impl <'a> ReaderJson<'a> {
+    pub fn new(root: &'a TypeJson) -> ReaderJson {
+        ReaderJson {
+            root: Some(root),
+        }
+    }
+
+    fn empty() -> ReaderJson<'a> {
+        ReaderJson {
+            root: None,
+        }
+    }
+
+    pub fn field(&self, key: &str) -> ReaderJson {
+        match self.root {
+            Some(TypeJson::Object(obj)) => match obj.get(key) {
+                Some(node) => ReaderJson::new(node),
+                _ => ReaderJson::empty(),
+            },
+            _ => ReaderJson::empty(),
+        }
+    }
+
+    pub fn json(&self) -> &TypeJson {
+        match self.root {
+            Some(node) => node,
+            _ => &NULL_JSON,
+        }
+    }
+}
+
+
 
 #[cfg(test)]
 mod tests {
