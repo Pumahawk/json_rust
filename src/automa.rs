@@ -57,27 +57,17 @@ impl Automa for StrAutoma {
                 },
                 StrAtm::N3 => {
                     match c {
-                        '\\' => {
-                            chars.push('\\');
-                            status = StrAtm::N2;
-                        },
-                        'n' => {
-                            chars.push('\n');
-                            status = StrAtm::N2;
-                        },
-                        'r' => {
-                            chars.push('\r');
-                            status = StrAtm::N2;
-                        },
-                        't' => {
-                            chars.push('\t');
-                            status = StrAtm::N2;
-                        },
-                        '"' => {
-                            chars.push('"');
-                            status = StrAtm::N2;
-                        },
+                        '\\' => escape(&mut status, &mut chars, '\\'),
+                        'n' => escape(&mut status, &mut chars, '\n'),
+                        'r' => escape(&mut status, &mut chars, '\r'),
+                        't' => escape(&mut status, &mut chars, '\t'),
+                        '"' => escape(&mut status, &mut chars, '"'),
                         _ => return Err(String::from("Invalid escape")),
+                    }
+
+                    fn escape(status: &mut StrAtm, chars: &mut Vec<char>, c: char) {
+                        chars.push(c);
+                        *status = StrAtm::N2;
                     }
                 }
             }
