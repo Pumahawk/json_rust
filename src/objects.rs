@@ -247,7 +247,7 @@ impl <'a> ReaderJson<'a> {
         }
     }
 
-    pub fn field(&self, key: &str) -> ReaderJson {
+    pub fn field(&self, key: &str) -> ReaderJson<'a> {
         match self.root {
             Some(TypeJson::Object(obj)) => match obj.get(key) {
                 Some(node) => ReaderJson::new(node),
@@ -257,7 +257,7 @@ impl <'a> ReaderJson<'a> {
         }
     }
 
-    pub fn index(&self, i: usize) -> ReaderJson {
+    pub fn index(&self, i: usize) -> ReaderJson<'a> {
         match self.root {
             Some(TypeJson::List(list)) => match list.get(i) {
                 Some(node) =>  ReaderJson::new(node),
@@ -265,6 +265,25 @@ impl <'a> ReaderJson<'a> {
             }
             _ => ReaderJson::empty(),
         }
+    }
+
+    pub fn path(&self, path: &str) -> Result<ReaderJson<'a>, String> {
+        if let Some(root) = self.root {
+            let mut ret = ReaderJson::new(root);
+            let mut path = path.chars();
+            let mut automa = crate::automa::KeyParseQueryAutoma::new(&mut path);
+            while let Some(token) = automa.next() {
+                match token {
+                    crate::automa::KeyParseQueryToken::Key(key) => ret = ret.field(&key),
+                    crate::automa::KeyParseQueryToken::Index(i) => ret = ret.index(i),
+                    crate::automa::KeyParseQueryToken::Error(msg) => return Err(msg),
+                };
+            }
+            Ok(ret)
+        } else {
+            Ok(ReaderJson::empty())
+        }
+        
     }
 
     pub fn json(&self) -> &TypeJson {
