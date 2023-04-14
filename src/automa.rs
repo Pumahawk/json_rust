@@ -478,6 +478,7 @@ impl <'a, T: Iterator<Item=char>> KeyParseQueryAutoma<'a, T> {
 impl <'a, T: Iterator<Item=char>> Iterator for KeyParseQueryAutoma<'a, T> {
     type Item=KeyParseQueryToken;
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
+        let str_automa = StrAutoma::new();
         while let Some(c) = self.iter.next() {
             match &self.status {
                 KeyParseQueryAtm::N1 => match c {
@@ -490,6 +491,15 @@ impl <'a, T: Iterator<Item=char>> Iterator for KeyParseQueryAutoma<'a, T> {
                         self.collect_c(c);
                         self.status = KeyParseQueryAtm::N3;
                     },
+                    c if str_automa.can_start(c) => {
+                        match str_automa.process(c, self.iter) {
+                            Ok(key) => {
+                                self.status = KeyParseQueryAtm::N1;
+                                return Some(KeyParseQueryToken::Key(key));
+                            },
+                            Err(msg) => return Some(KeyParseQueryToken::Error(format!("Error reading {}", msg))),
+                        }
+                    }
                     _ => return Some("Invalid key string reference. Valid: char".into()),
                 },
                 KeyParseQueryAtm::N3 => match c {
@@ -804,7 +814,7 @@ mod test {
 
     #[test]
     fn parser_query() {
-        let query = ".key.field[1][2].name.field1.000[001]";
+        let query = ".key.field[1][2].name.field1.000[001].\"txt_!!£\"[33]";
         let mut iter = query.chars();
         let mut parser = KeyParseQueryAutoma::new(&mut iter);
         assert_key("key", &mut parser);
@@ -815,6 +825,8 @@ mod test {
         assert_key("field1", &mut parser);
         assert_key("000", &mut parser);
         assert_index(1, &mut parser);
+        assert_key("txt_!!£", &mut parser);
+        assert_index(33, &mut parser);
 
         fn assert_key<T: Iterator<Item=char>>(expected: &str, parser: &mut KeyParseQueryAutoma<T>) {
             match parser.next() {
