@@ -267,7 +267,15 @@ impl <'a> ReaderJson<'a> {
         }
     }
 
-    pub fn path(&self, path: &str) -> Result<ReaderJson<'a>, String> {
+    
+    pub fn path(&self, path: &str) -> ReaderJson<'a> {
+        match self.path_check(path) {
+            Ok(reader) => reader,
+            _ => ReaderJson::empty(),
+        }
+    }
+    
+    pub fn path_check(&self, path: &str) -> Result<ReaderJson<'a>, String> {
         if let Some(root) = self.root {
             let mut ret = ReaderJson::new(root);
             let mut path = path.chars();
@@ -403,6 +411,6 @@ mod tests {
         assert_eq!(Some("value-sub1"), reader.field("k2").field("k3").field("n5").json().as_text());
         assert_eq!(Some("message-2"), reader.field("k2").field("k3").field("n6").index(1).json().as_text());
 
-        assert_eq!(Some("message-2"), reader.path(".k2.k3.n6[1]").unwrap().json().as_text());
+        assert_eq!(Some("message-2"), reader.path(".k2.k3.n6[1]").json().as_text());
     }
 }
