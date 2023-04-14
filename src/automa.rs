@@ -14,7 +14,7 @@ pub trait Automa {
 }
 
 enum StrAtm {
-    N1, N2,
+    N1, N2, N3,
 }
 
 struct StrAutoma {   
@@ -51,9 +51,35 @@ impl Automa for StrAutoma {
                 StrAtm::N2 => {
                     match c {
                         '"' => return Ok(chars.iter().collect()),
+                        '\\' => status = StrAtm::N3,
                         c => chars.push(c),
                     }
                 },
+                StrAtm::N3 => {
+                    match c {
+                        '\\' => {
+                            chars.push('\\');
+                            status = StrAtm::N2;
+                        },
+                        'n' => {
+                            chars.push('\n');
+                            status = StrAtm::N2;
+                        },
+                        'r' => {
+                            chars.push('\r');
+                            status = StrAtm::N2;
+                        },
+                        't' => {
+                            chars.push('\t');
+                            status = StrAtm::N2;
+                        },
+                        '"' => {
+                            chars.push('"');
+                            status = StrAtm::N2;
+                        },
+                        _ => return Err(String::from("Invalid escape")),
+                    }
+                }
             }
         }
         Err(String::from("unable to retrieve str"))
@@ -595,8 +621,14 @@ mod test {
         let rest: String = iter.collect();
 
         assert_eq!("input_automa", result);
-        assert_eq!("input_automa", result);
         assert_eq!(": 1234", rest);
+
+        let input = String::from("\"\\n\\\"\"");
+        if let Ok(msg) = str_automa.start(&mut input.chars()) {
+            assert_eq!("\n\"", msg);
+        } else {
+            assert!(false);
+        }
         
     }
 
