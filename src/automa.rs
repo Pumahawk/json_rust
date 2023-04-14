@@ -486,14 +486,14 @@ impl <'a, T: Iterator<Item=char>> Iterator for KeyParseQueryAutoma<'a, T> {
                     _ => return Some("Invalid starter character. Valid: /".into()),
                 },
                 KeyParseQueryAtm::N2 => match c {
-                    c if is_char(c) => {
+                    c if is_char(c) || is_number(c) => {
                         self.collect_c(c);
                         self.status = KeyParseQueryAtm::N3;
                     },
                     _ => return Some("Invalid key string reference. Valid: char".into()),
                 },
                 KeyParseQueryAtm::N3 => match c {
-                    c if is_char(c) => self.collect_c(c),
+                    c if is_char(c) || is_number(c) => self.collect_c(c),
                     '.' => {
                         self.status = KeyParseQueryAtm::N2;
                         return Some(self.retrieve_field());
@@ -804,28 +804,30 @@ mod test {
 
     #[test]
     fn parser_query() {
-        let query = ".key.field[1][2].name";
+        let query = ".key.field[1][2].name.field1.000[001]";
         let mut iter = query.chars();
         let mut parser = KeyParseQueryAutoma::new(&mut iter);
-        match parser.next() {
-            Some(KeyParseQueryToken::Key(key)) => assert_eq!("key", key),
-            _ => assert!(false),
+        assert_key("key", &mut parser);
+        assert_key("field", &mut parser);
+        assert_index(1, &mut parser);
+        assert_index(2, &mut parser);
+        assert_key("name", &mut parser);
+        assert_key("field1", &mut parser);
+        assert_key("000", &mut parser);
+        assert_index(1, &mut parser);
+
+        fn assert_key<T: Iterator<Item=char>>(expected: &str, parser: &mut KeyParseQueryAutoma<T>) {
+            match parser.next() {
+                Some(KeyParseQueryToken::Key(key)) => assert_eq!(expected, key),
+                _ => assert!(false),
+            }
         }
-        match parser.next() {
-            Some(KeyParseQueryToken::Key(key)) => assert_eq!("field", key),
-            _ => assert!(false),
-        }
-        match parser.next() {
-            Some(KeyParseQueryToken::Index(number)) => assert_eq!(1, number),
-            _ => assert!(false),
-        }
-        match parser.next() {
-            Some(KeyParseQueryToken::Index(number)) => assert_eq!(2, number),
-            _ => assert!(false),
-        }
-        match parser.next() {
-            Some(KeyParseQueryToken::Key(key)) => assert_eq!("name", key),
-            _ => assert!(false),
+
+        fn assert_index<T: Iterator<Item=char>>(expected: usize, parser: &mut KeyParseQueryAutoma<T>) {
+            match parser.next() {
+                Some(KeyParseQueryToken::Index(index)) => assert_eq!(expected, index),
+                _ => assert!(false),
+            }
         }
     }
 }
