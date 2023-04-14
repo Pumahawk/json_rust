@@ -442,6 +442,7 @@ impl From<&str> for KeyParseQueryToken {
 
 pub struct KeyParseQueryAutoma<'a, T> {
     status: KeyParseQueryAtm,
+    chars: Vec<char>,
     iter: &'a mut T,
 }
 
@@ -449,9 +450,29 @@ impl <'a, T: Iterator<Item=char>> KeyParseQueryAutoma<'a, T> {
     pub fn new(iter: &mut T) -> KeyParseQueryAutoma<T> {
         KeyParseQueryAutoma {
             status: KeyParseQueryAtm::N1,
+            chars: Vec::new(),
             iter,
         }
     }
+
+    fn collect_c(&mut self, c: char) {
+        self.chars.push(c);
+    }
+
+    fn retrieve_field(&mut self) -> KeyParseQueryToken {
+        let mut vp = Vec::new();
+        vp.append(&mut self.chars);
+        KeyParseQueryToken::Key(vp.into_iter().collect())
+    } 
+
+    fn retrieve_number(&mut self) -> KeyParseQueryToken {
+        let mut vp = Vec::new();
+        vp.append(&mut self.chars);
+        match vp.into_iter().collect::<String>().parse() {
+            Ok(number) => KeyParseQueryToken::Index(number),
+            Err(msg) => KeyParseQueryToken::Error(msg.to_string()),
+        }
+    } 
 }
 
 impl <'a, T: Iterator<Item=char>> Iterator for KeyParseQueryAutoma<'a, T> {
@@ -460,16 +481,45 @@ impl <'a, T: Iterator<Item=char>> Iterator for KeyParseQueryAutoma<'a, T> {
         while let Some(c) = self.iter.next() {
             match &self.status {
                 KeyParseQueryAtm::N1 => match c {
-                    '/' => {
-                        todo!();
-                    }
+                    '.' => self.status = KeyParseQueryAtm::N2,
+                    '[' => self.status = KeyParseQueryAtm::N4,
                     _ => return Some("Invalid starter character. Valid: /".into()),
                 },
-                KeyParseQueryAtm::N2 => todo!(),
-                KeyParseQueryAtm::N3 => todo!(),
-                KeyParseQueryAtm::N4 => todo!(),
-                KeyParseQueryAtm::N5 => todo!(),
-                KeyParseQueryAtm::N6 => todo!(),
+                KeyParseQueryAtm::N2 => match c {
+                    c if is_char(c) => {
+                        self.collect_c(c);
+                        self.status = KeyParseQueryAtm::N3;
+                    },
+                    _ => return Some("Invalid key string reference. Valid: char".into()),
+                },
+                KeyParseQueryAtm::N3 => match c {
+                    c if is_char(c) => self.collect_c(c),
+                    '.' => {
+                        self.status = KeyParseQueryAtm::N2;
+                        return Some(self.retrieve_field());
+                    },
+                    '[' => {
+                        self.status = KeyParseQueryAtm::N4;
+                        return Some(self.retrieve_field());
+                    },
+                    _ => return Some("Invalid key string reference.".into()),
+                },
+                KeyParseQueryAtm::N4 => match c {
+                    c if is_number(c) => {
+                        self.status = KeyParseQueryAtm::N5;
+                        self.collect_c(c);
+                    },
+                    _ => return Some("Invalid key index reference.".into()),
+                },
+                KeyParseQueryAtm::N5 => match c {
+                    c if is_number(c) => self.collect_c(c),
+                    ']' => {
+                        self.status = KeyParseQueryAtm::N1;
+                        return Some(self.retrieve_number());
+                    }
+                    _ => return Some("Invalid key index reference.".into()),
+                },
+                KeyParseQueryAtm::N6 => return None,
             }
         }
         match &self.status {
@@ -477,7 +527,7 @@ impl <'a, T: Iterator<Item=char>> Iterator for KeyParseQueryAutoma<'a, T> {
             KeyParseQueryAtm::N6 => None,
             KeyParseQueryAtm::N3 => {
                 self.status = KeyParseQueryAtm::N6;
-                todo!(); // return Some(String)
+                return Some(self.retrieve_field());
             },
             _ => Some("Invalid EOF status".into()),
         }
@@ -750,5 +800,32 @@ mod test {
         let tags = user.get("tags").unwrap().as_list().unwrap();
         assert_eq!("t1", tags.get(0).unwrap().as_text().unwrap());
         assert_eq!("t2", tags.get(1).unwrap().as_text().unwrap());
+    }
+
+    #[test]
+    fn parser_query() {
+        let query = ".key.field[1][2].name";
+        let mut iter = query.chars();
+        let mut parser = KeyParseQueryAutoma::new(&mut iter);
+        match parser.next() {
+            Some(KeyParseQueryToken::Key(key)) => assert_eq!("key", key),
+            _ => assert!(false),
+        }
+        match parser.next() {
+            Some(KeyParseQueryToken::Key(key)) => assert_eq!("field", key),
+            _ => assert!(false),
+        }
+        match parser.next() {
+            Some(KeyParseQueryToken::Index(number)) => assert_eq!(1, number),
+            _ => assert!(false),
+        }
+        match parser.next() {
+            Some(KeyParseQueryToken::Index(number)) => assert_eq!(2, number),
+            _ => assert!(false),
+        }
+        match parser.next() {
+            Some(KeyParseQueryToken::Key(key)) => assert_eq!("name", key),
+            _ => assert!(false),
+        }
     }
 }
