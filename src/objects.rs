@@ -402,5 +402,7 @@ mod tests {
         let reader = ReaderJson::new(&root);
         assert_eq!(Some("value-sub1"), reader.field("k2").field("k3").field("n5").json().as_text());
         assert_eq!(Some("message-2"), reader.field("k2").field("k3").field("n6").index(1).json().as_text());
+
+        assert_eq!(Some("message-2"), reader.path(".k2.k3.n6[1]").unwrap().json().as_text());
     }
 }
