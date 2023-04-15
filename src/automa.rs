@@ -823,13 +823,18 @@ mod test {
             "age": 32.0,
             "tags": ["t1", "t2"]
         }"###);
-        let user = json::parser(input.chars()).unwrap();
+        let mut user = json::parser(input.chars()).unwrap();
         assert_eq!("Foo", user.get("name").unwrap().as_text().unwrap());
         assert_eq!("Paa", user.get("username").unwrap().as_text().unwrap());
         assert_eq!(32.0, *user.get("age").unwrap().as_number().unwrap());
         let tags = user.get("tags").unwrap().as_list().unwrap();
         assert_eq!("t1", tags.get(0).unwrap().as_text().unwrap());
         assert_eq!("t2", tags.get(1).unwrap().as_text().unwrap());
+
+        match user.remove("tags") {
+            Some(TypeJson::List(list)) => assert_eq!(Some("t2"), list.get(1).unwrap().as_text()),
+            _ => assert!(false),
+        }
     }
 
     #[test]

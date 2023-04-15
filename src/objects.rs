@@ -109,6 +109,10 @@ impl ObjectJson {
             .get_mut(key)
     }
 
+    pub fn remove(&mut self, key: &str) -> Option<TypeJson> {
+        self.parameters.remove(key)
+    }
+
     pub fn iter(&self) -> impl Iterator<Item=(&String, &TypeJson)> {
         self.parameters.iter()
     }
