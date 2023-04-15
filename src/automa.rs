@@ -476,9 +476,7 @@ impl <'a, T: Iterator<Item=char>> KeyParseQueryAutoma<'a, T> {
     }
 
     fn retrieve_field(&mut self) -> KeyParseQueryToken {
-        let mut vp = Vec::new();
-        vp.append(&mut self.chars);
-        KeyParseQueryToken::Key(vp.into_iter().collect())
+        KeyParseQueryToken::Key(self.chars.drain(..).collect())
     } 
 
     fn retrieve_number(&mut self) -> KeyParseQueryToken {
