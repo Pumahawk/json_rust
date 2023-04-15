@@ -147,6 +147,14 @@ impl ListJson {
         self.list.push(obj.into());
     }
 
+    pub fn pop(&mut self) -> Option<TypeJson> {
+        self.list.pop()
+    }
+
+    pub fn remove(&mut self, index: usize) -> TypeJson {
+        self.list.remove(index)
+    }
+
     pub fn object(&mut self) -> &mut ObjectJson {
         self.add(ObjectJson::new());
         match self.list.last_mut() {
