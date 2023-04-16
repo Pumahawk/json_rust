@@ -1,12 +1,67 @@
 use crate::objects as json;
 
+#[derive(Debug)]
+pub enum AutomaError {
+    Parser(ParserError),
+}
+
+impl std::fmt::Display for AutomaError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            AutomaError::Parser(error) => write!(f, "{}", error.message())
+        }
+    }
+}
+
+impl std::error::Error for AutomaError {
+}
+
+type AutomaResult<T> = Result<T, AutomaError>;
+
+#[derive(Debug)]
+pub struct ParserError {
+    message: String,
+}
+
+impl ParserError {
+    pub fn new(message: String) -> ParserError {
+        ParserError {
+            message,
+        }
+    }
+
+    pub fn message(&self) -> &str {
+        &self.message
+    }
+}
+
+impl std::fmt::Display for ParserError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{}", self.message())
+    }
+}
+
+impl From<&str> for ParserError {
+    fn from(message: &str) -> Self {
+        ParserError {
+            message: String::from(message),
+        }
+    }
+}
+
+impl From<ParserError> for AutomaError {
+    fn from(value: ParserError) -> Self {
+        AutomaError::Parser(value)
+    }
+}
+
 pub trait Automa {
     type Input;
     type Output;
     fn can_start(&self, input: Self::Input) -> bool;
-    fn start(&self, iter: &mut dyn Iterator<Item=Self::Input>) -> Result<Self::Output, String>;
+    fn start(&self, iter: &mut dyn Iterator<Item=Self::Input>) -> AutomaResult<Self::Output>;
 
-    fn process(&self, first: Self::Input, iter: &mut  dyn Iterator<Item=Self::Input>) -> Result<Self::Output, String> {
+    fn process(&self, first: Self::Input, iter: &mut  dyn Iterator<Item=Self::Input>) -> AutomaResult<Self::Output> {
         let mut iter = std::iter::once(first).chain(iter);
         self.start(&mut iter)
     }
@@ -35,7 +90,7 @@ impl Automa for StrAutoma {
         input == '"'
     }
 
-    fn start(&self, iter: &mut dyn Iterator<Item=Self::Input>) -> Result<Self::Output, String> {
+    fn start(&self, iter: &mut dyn Iterator<Item=Self::Input>) -> AutomaResult<Self::Output> {
         let mut status = StrAtm::N1;
         let mut chars = Vec::new();
         for c in iter {
@@ -45,7 +100,7 @@ impl Automa for StrAutoma {
                         '"' => {
                             status = StrAtm::N2;
                         },
-                        _ => return Err(String::from("invalid")),
+                        _ => return Err(ParserError::from("invalid").into()),
                     }
                 },
                 StrAtm::N2 => {
@@ -62,7 +117,7 @@ impl Automa for StrAutoma {
                         'r' => escape(&mut status, &mut chars, '\r'),
                         't' => escape(&mut status, &mut chars, '\t'),
                         '"' => escape(&mut status, &mut chars, '"'),
-                        _ => return Err(String::from("Invalid escape")),
+                        _ => return Err(ParserError::from("Invalid escape").into()),
                     }
 
                     fn escape(status: &mut StrAtm, chars: &mut Vec<char>, c: char) {
@@ -72,7 +127,7 @@ impl Automa for StrAutoma {
                 }
             }
         }
-        Err(String::from("unable to retrieve str"))
+        Err(ParserError::from("unable to retrieve str").into())
     }
 }
 
@@ -103,7 +158,7 @@ impl Automa for StringAutoma {
     fn can_start(&self, input: Self::Input) -> bool {
         if let Some(v) =self.value.chars().next() { v == input} else { false }
     }
-    fn start(&self, iter: &mut dyn Iterator<Item=Self::Input>) -> Result<Self::Output, String> {
+    fn start(&self, iter: &mut dyn Iterator<Item=Self::Input>) -> AutomaResult<Self::Output> {
         let mut i = 0;
         while let Some(c) = iter.next() {
             if self.value.as_bytes()[i] == c as u8 {
@@ -112,10 +167,10 @@ impl Automa for StringAutoma {
                     return Ok(());
                 }
             } else {
-                return Err(String::from("Erro String match. Char not equal"));
+                return Err(ParserError::from("Erro String match. Char not equal").into());
             }
         }
-        Err(String::from("Invalid StringAutoma parse."))
+        Err(ParserError::from("Invalid StringAutoma parse.").into())
     }
 }
 
@@ -142,7 +197,7 @@ impl Automa for NumberAutoma {
         is_number(input)
     }
 
-    fn start(&self, iter: &mut dyn Iterator<Item=Self::Input>) -> Result<Self::Output, String> {
+    fn start(&self, iter: &mut dyn Iterator<Item=Self::Input>) -> AutomaResult<Self::Output> {
         let mut status = NumberAtm::N1;
         let mut number_chars = Vec::new();
         while let Some(c) = iter.next() {
@@ -153,7 +208,7 @@ impl Automa for NumberAutoma {
                             number_chars.push(c);
                             status = NumberAtm::N2;
                         }
-                        _ => return Err(String::from("Unable to read first number")),
+                        _ => return Err(ParserError::from("Unable to read first number").into()),
                     }
                 },
                 NumberAtm::N2 => {
@@ -184,7 +239,7 @@ impl Automa for NumberAutoma {
         }
         match number_chars.iter().collect::<String>().parse() {
             Ok(number) => Ok((number, None)),
-            _ => Err(String::from("Unable to retrieve number")),
+            _ => Err(ParserError::from("Unable to retrieve number").into()),
         }
     }
 }
@@ -211,7 +266,7 @@ impl Automa for ObjectAutoma {
         input == '{'
     }
 
-    fn start(&self, iter: &mut dyn Iterator<Item=Self::Input>) -> Result<Self::Output, String> {
+    fn start(&self, iter: &mut dyn Iterator<Item=Self::Input>) -> AutomaResult<Self::Output> {
         let mut iter: Box<dyn Iterator<Item=char>> = Box::new(std::iter::empty().chain(iter));
         let mut status = ObjectAtm::N1;
         let mut key = None;
@@ -223,7 +278,7 @@ impl Automa for ObjectAutoma {
                         '{' => {
                             status = ObjectAtm::N2;
                         },
-                        _ => return Err(String::from("invalid from node: N1"))
+                        _ => return Err(ParserError::from("invalid from node: N1").into())
                     }
                 },
                 ObjectAtm::N2 => {
@@ -240,7 +295,7 @@ impl Automa for ObjectAutoma {
                             }
                             status = ObjectAtm::N3;
                         },
-                        _ => return Err(String::from("invalid from node: N2"))
+                        _ => return Err(ParserError::from("invalid from node: N2").into())
                     }
                 },
                 ObjectAtm::N3 => {
@@ -249,7 +304,7 @@ impl Automa for ObjectAutoma {
                         ':' => {
                             status = ObjectAtm::N4;
                         },
-                        other => return Err(format!("invalid from node: N3. Value: {other}"))
+                        other => return Err(ParserError::new(format!("invalid from node: N3. Value: {other}")).into())
                     }
                 },
                 ObjectAtm::N4 => {
@@ -313,7 +368,7 @@ impl Automa for ObjectAutoma {
                                 Err(msg) => return Err(msg),
                             }
                         }
-                        _ => return Err(String::from("invalid from node: N4"))
+                        _ => return Err(ParserError::from("invalid from node: N4").into())
                     }
                 },
                 ObjectAtm::N5 => {
@@ -323,12 +378,12 @@ impl Automa for ObjectAutoma {
                         ',' => {
                             status = ObjectAtm::N2;
                         }
-                        _ => return Err(String::from("invalid from node: N5"))
+                        _ => return Err(ParserError::from("invalid from node: N5").into())
                     }
                 },
             }
         }
-        Err(String::from("invalid json automa"))
+        Err(ParserError::from("invalid json automa").into())
     }
 }
 
@@ -354,7 +409,7 @@ impl Automa for ArrayAutoma {
         input == '['
     }
 
-    fn start(&self, iter: &mut dyn Iterator<Item=Self::Input>) -> Result<Self::Output, String> {
+    fn start(&self, iter: &mut dyn Iterator<Item=Self::Input>) -> AutomaResult<Self::Output> {
         let mut iter: Box<dyn Iterator<Item=char>> = Box::new(std::iter::empty().chain(iter));
         let mut status = ArrayAtm::N1;
         let mut json_array = json::array();
@@ -365,7 +420,7 @@ impl Automa for ArrayAutoma {
                         '[' => {
                             status = ArrayAtm::N2;
                         },
-                        _ => return Err(String::from("Invalid ArrayAtm::N1")),
+                        _ => return Err(ParserError::from("Invalid ArrayAtm::N1").into()),
                     }
                 },
                 ArrayAtm::N2 => {
@@ -382,7 +437,7 @@ impl Automa for ArrayAutoma {
                                 json_array.add(string);
                                 status = ArrayAtm::N3;
                             },
-                            _ => return Err(String::from("Invalid ArrayAtm::N2, string_automa")),
+                            _ => return Err(ParserError::from("Invalid ArrayAtm::N2, string_automa").into()),
                         },
                         c if number_automa.can_start(c) => match number_automa.process(c, &mut iter) {
                             Ok((num, c)) => {
@@ -392,30 +447,30 @@ impl Automa for ArrayAutoma {
                                 }
                                 status = ArrayAtm::N3;
                             }
-                            _ => return Err(String::from("Invalid ArrayAtm::N2, number_automa")),
+                            _ => return Err(ParserError::from("Invalid ArrayAtm::N2, number_automa").into()),
                         }
                         c if object_automa.can_start(c) => match object_automa.process(c, &mut iter) {
                             Ok(object) => {
                                 json_array.add(object);
                                 status = ArrayAtm::N3;
                             }
-                            _ => return Err(String::from("Invalid ArrayAtm::N2, object_automa")),
+                            _ => return Err(ParserError::from("Invalid ArrayAtm::N2, object_automa").into()),
                         }
                         c if array_automa.can_start(c) => match array_automa.process(c, &mut iter) {
                             Ok(array) => {
                                 json_array.add(array);
                                 status = ArrayAtm::N3;
                             }
-                            _ => return Err(String::from("Invalid ArrayAtm::N2, array_automa")),
+                            _ => return Err(ParserError::from("Invalid ArrayAtm::N2, array_automa").into()),
                         }
                         c if null_automa.can_start(c) => match null_automa.process(c, &mut iter) {
                             Ok(_) => {
                                 json_array.add(json::null());
                                 status = ArrayAtm::N3;
                             }
-                            _ => return Err(String::from("Invalid ArrayAtm::N2, null_automa")),
+                            _ => return Err(ParserError::from("Invalid ArrayAtm::N2, null_automa").into()),
                         }
-                        _ => return Err(String::from("Invalid ArrayAtm::N2")),
+                        _ => return Err(ParserError::from("Invalid ArrayAtm::N2").into()),
                     }
                 },
                 ArrayAtm::N3 => {
@@ -425,12 +480,12 @@ impl Automa for ArrayAutoma {
                             status = ArrayAtm::N2;
                         },
                         c if is_space(c) => {},
-                        _ => return Err(String::from("Invalid ArrayAtm::N3")),
+                        _ => return Err(ParserError::from("Invalid ArrayAtm::N3").into()),
                     }
                 },
             }
         }
-        Err(String::from("unable to retrieve array"))
+        Err(ParserError::from("unable to retrieve array").into())
     }
 
 }
@@ -511,7 +566,9 @@ impl <'a, T: Iterator<Item=char>> Iterator for KeyParseQueryAutoma<'a, T> {
                                 self.status = KeyParseQueryAtm::N1;
                                 return Some(KeyParseQueryToken::Key(key));
                             },
-                            Err(msg) => return Some(KeyParseQueryToken::Error(format!("Error reading {}", msg))),
+                            Err(error) => match error {
+                                AutomaError::Parser(msg) => return Some(KeyParseQueryToken::Error(format!("Error reading {}", msg))),
+                            }
                         }
                     }
                     _ => return Some("Invalid key string reference. Valid: char".into()),
@@ -573,7 +630,7 @@ fn is_char(c: char) -> bool {
     (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
 }
 
-pub fn parser(mut iter: impl Iterator<Item=char>) -> Result<json::ObjectJson, String> {
+pub fn parser(mut iter: impl Iterator<Item=char>) -> AutomaResult<json::ObjectJson> {
     ObjectAutoma::new().start(&mut iter)
 }
 
@@ -629,8 +686,8 @@ mod test {
             Ok(json_object) => {
                 assert_eq!("input_automa", if let TypeJson::Text(msg) = json_object.get("key").unwrap() {msg} else {"none"});
             },
-            Err(msg) => {
-                assert_eq!("ok", msg);
+            Err(_) => {
+                assert!(false);
             }
         }
 
@@ -641,8 +698,8 @@ mod test {
                 assert_eq!("input_automa_1", if let TypeJson::Text(msg) = json_object.get("key1").unwrap() {msg} else {"none"});
                 assert_eq!("input_automa_2", if let TypeJson::Text(msg) = json_object.get("key2").unwrap() {msg} else {"none"});
             },
-            Err(msg) => {
-                assert_eq!("ok", msg);
+            Err(_) => {
+                assert!(false);
             }
         }
 
@@ -653,8 +710,8 @@ mod test {
                 assert_eq!("input_automa_1", if let TypeJson::Text(msg) = json_object.get("key1").unwrap() {msg} else {"none"});
                 assert_eq!("input_automa_2", if let TypeJson::Text(msg) = json_object.get("key2").unwrap() {msg} else {"none"});
             },
-            Err(msg) => {
-                assert_eq!("ok", msg);
+            Err(_) => {
+                assert!(false);
             }
         }
 
@@ -674,8 +731,8 @@ mod test {
                     _ => unreachable!(),
                 }
             },
-            Err(msg) => {
-                assert_eq!("ok", msg);
+            Err(_) => {
+                assert!(false);
             }
         }
 
@@ -686,8 +743,8 @@ mod test {
                 assert_eq!("input_automa_1", if let TypeJson::Text(msg) = json_object.get("key1").unwrap() {msg} else {"none"});
                 assert_eq!("null", if let TypeJson::Null = json_object.get("key2").unwrap() {"null"} else {"none"});
             },
-            Err(msg) => {
-                assert_eq!("ok", msg);
+            Err(_) => {
+                assert!(false);
             }
         }
 
@@ -698,8 +755,8 @@ mod test {
                 assert_eq!("input_automa_1", if let TypeJson::Text(msg) = json_object.get("key1").unwrap() {msg} else {"none"});
                 assert_eq!(33.2, if let TypeJson::Number(num) = json_object.get("key2").unwrap() {*num} else {0.0});
             },
-            Err(msg) => {
-                assert_eq!("ok", msg);
+            Err(_) => {
+                assert!(false);
             }
         }
 
@@ -715,8 +772,8 @@ mod test {
                     _ => assert!(false),
                 }
             },
-            Err(msg) => {
-                assert_eq!("ok", msg);
+            Err(_) => {
+                assert!(false);
             }
         }
     }
