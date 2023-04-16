@@ -67,6 +67,22 @@ impl TypeJson {
     }
 }
 
+impl ToString for TypeJson {
+    fn to_string(&self) -> String {
+        match self {
+            TypeJson::Object(object) => object.to_string(),
+            TypeJson::List(list) => list.to_string(),
+            TypeJson::Text(txt) => string_to_json_escape(txt),
+            TypeJson::Number(num) => num.to_string(),
+            TypeJson::Null => String::from("null"),
+        }
+    }
+}
+
+fn string_to_json_escape(txt: &str) -> String {
+    todo!();
+}
+
 pub struct ObjectJson {
     parameters: HashMap<String, TypeJson>,
 }
@@ -123,6 +139,12 @@ impl ObjectJson {
 
     pub fn keys(&self) -> impl Iterator<Item=&String> {
         self.iter().map(|(key, _)|key)
+    }
+}
+
+impl ToString for ObjectJson {
+    fn to_string(&self) -> String {
+        todo!();
     }
 }
 
@@ -189,6 +211,12 @@ impl ListJson {
 
     pub fn iter_mut(&mut self) -> impl Iterator<Item=&mut TypeJson> {
         self.list.iter_mut()
+    }
+}
+
+impl ToString for ListJson {
+    fn to_string(&self)  -> String {
+        todo!();
     }
 }
 
