@@ -234,7 +234,16 @@ impl ListJson {
 
 impl ToString for ListJson {
     fn to_string(&self)  -> String {
-        todo!();
+        std::iter::once('[')
+            .chain(self
+                .iter()
+                .map(|obj|obj.to_string())
+                .collect::<Vec<_>>()
+                .join(",")
+                .chars()
+            )
+            .chain(std::iter::once(']'))
+            .collect()
     }
 }
 
