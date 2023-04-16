@@ -80,7 +80,25 @@ impl ToString for TypeJson {
 }
 
 fn string_to_json_escape(txt: &str) -> String {
-    todo!();
+    return std::iter::once('"')
+        .chain(txt.chars())
+        .flat_map(|c| {
+            let iter: Box<dyn Iterator<Item = char>>;
+            match c {
+                '"' => iter = to_iter("\\\""),
+                '\n' => iter = to_iter("\\n"),
+                '\r' => iter = to_iter("\\r"),
+                '\t' => iter = to_iter("\\t"),
+                other => iter = Box::new(std::iter::once(other)),
+            }
+            iter
+        })
+        .chain(std::iter::once('"'))
+        .collect();
+    
+    fn to_iter(txt: &'static str) -> Box<dyn Iterator<Item = char>> {
+        Box::new(txt.chars())
+    }
 }
 
 pub struct ObjectJson {
