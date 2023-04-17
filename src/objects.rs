@@ -162,7 +162,16 @@ impl ObjectJson {
 
 impl ToString for ObjectJson {
     fn to_string(&self) -> String {
-        todo!();
+        std::iter::once('{')
+        .chain(self
+            .iter()
+            .map(|(key, obj)| format!("\"{}\":{}", key, obj.to_string()))
+            .collect::<Vec<_>>()
+            .join(",")
+            .chars()
+        )
+        .chain(std::iter::once('}'))
+        .collect()
     }
 }
 
