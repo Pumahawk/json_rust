@@ -81,18 +81,20 @@ impl ToString for TypeJson {
 
 fn string_to_json_escape(txt: &str) -> String {
     return std::iter::once('"')
-        .chain(txt.chars())
-        .flat_map(|c| {
-            let iter: Box<dyn Iterator<Item = char>>;
-            match c {
-                '"' => iter = to_iter("\\\""),
-                '\n' => iter = to_iter("\\n"),
-                '\r' => iter = to_iter("\\r"),
-                '\t' => iter = to_iter("\\t"),
-                other => iter = Box::new(std::iter::once(other)),
-            }
-            iter
-        })
+        .chain(txt
+            .chars()
+            .flat_map(|c| {
+                let iter: Box<dyn Iterator<Item = char>>;
+                match c {
+                    '"' => iter = to_iter("\\\""),
+                    '\n' => iter = to_iter("\\n"),
+                    '\r' => iter = to_iter("\\r"),
+                    '\t' => iter = to_iter("\\t"),
+                    other => iter = Box::new(std::iter::once(other)),
+                }
+                iter
+            })
+        )
         .chain(std::iter::once('"'))
         .collect();
     
@@ -488,5 +490,29 @@ mod tests {
         assert_eq!(Some("message-2"), reader.field("k2").field("k3").field("n6").index(1).json().as_text());
 
         assert_eq!(Some("message-2"), reader.path(".k2.k3.n6[1]").json().as_text());
+    }
+
+    #[test]
+    fn json_to_string() {
+        
+        let mut root = object();
+        let node = root.object("k1");
+        node.set("n1", "value1");
+        node.set("n2", "value2");
+        let node = root.object("k2");
+        node.set("n3", "value1");
+        node.set("n4", "value2");
+        let node = node.object("k3");
+        node.set("n5", "value-sub1");
+        let list = node.list("n6");
+        list.add("message-1");
+        list.add("message-2");
+        let obj = list.object();
+        obj.set("k1", "v1");
+        let array = list.list();
+        array.add("v1");
+
+        assert_eq!("{\"k2\":{\"n4\":\"value2\",\"n3\":\"value1\",\"k3\":{\"n5\":\"value-sub1\",\"n6\":[\"message-1\",\"message-2\",{\"k1\":\"v1\"},[\"v1\"]]}},\"k1\":{\"n2\":\"value2\",\"n1\":\"value1\"}}",
+        root.to_string())
     }
 }
