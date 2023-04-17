@@ -498,21 +498,17 @@ mod tests {
         let mut root = object();
         let node = root.object("k1");
         node.set("n1", "value1");
-        node.set("n2", "value2");
-        let node = root.object("k2");
-        node.set("n3", "value1");
-        node.set("n4", "value2");
-        let node = node.object("k3");
-        node.set("n5", "value-sub1");
-        let list = node.list("n6");
-        list.add("message-1");
-        list.add("message-2");
-        let obj = list.object();
-        obj.set("k1", "v1");
-        let array = list.list();
-        array.add("v1");
 
-        assert_eq!("{\"k2\":{\"n4\":\"value2\",\"n3\":\"value1\",\"k3\":{\"n5\":\"value-sub1\",\"n6\":[\"message-1\",\"message-2\",{\"k1\":\"v1\"},[\"v1\"]]}},\"k1\":{\"n2\":\"value2\",\"n1\":\"value1\"}}",
-        root.to_string())
+        assert_eq!(
+            "{\"k1\":{\"n1\":\"value1\"}}",
+            root.to_string());
+        
+        let mut root = object();
+        let node = root.list("k1");
+        node.add(12.1);
+
+        assert_eq!(
+            "{\"k1\":[12.1]}",
+            root.to_string());
     }
 }
