@@ -78,6 +78,26 @@ impl TypeJson {
             _ => false,
         }
     }
+
+    pub fn traverse(self, path: &str) -> Result<TypeJson, String> {
+        let mut ret = self.into();
+        let mut chars = path.chars();
+        let mut automa = crate::automa::KeyParseQueryAutoma::new(&mut chars);
+        while let Some(token) = automa.next() {
+            match token {
+                crate::automa::KeyParseQueryToken::Key(key) => ret = match ret {
+                    TypeJson::Object(mut obj) => obj.remove(&key).ok_or("Unable to traverse")?,
+                    _ => TypeJson::Null, 
+                },
+                crate::automa::KeyParseQueryToken::Index(i) => ret = match ret {
+                    TypeJson::List(mut list) => list.remove(i),
+                    _ => TypeJson::Null, 
+                },
+                crate::automa::KeyParseQueryToken::Error(msg) => return Err(msg),
+            };
+        }
+        Ok(ret)
+    }
 }
 
 impl ToString for TypeJson {
@@ -404,27 +424,6 @@ impl <'a> ReaderJson<'a> {
     }
 }
 
-pub fn traverse(root: TypeJson, path: &str) -> Result<TypeJson, String> {
-    let mut ret = root;
-    let mut chars = path.chars();
-    let mut automa = crate::automa::KeyParseQueryAutoma::new(&mut chars);
-    while let Some(token) = automa.next() {
-        match token {
-            crate::automa::KeyParseQueryToken::Key(key) => ret = match ret {
-                TypeJson::Object(mut obj) => obj.remove(&key).ok_or("Unable to traverse")?,
-                _ => TypeJson::Null, 
-            },
-            crate::automa::KeyParseQueryToken::Index(i) => ret = match ret {
-                TypeJson::List(mut list) => list.remove(i),
-                _ => TypeJson::Null, 
-            },
-            crate::automa::KeyParseQueryToken::Error(msg) => return Err(msg),
-        };
-    }
-    Ok(ret)
-
-}
-
 
 
 #[cfg(test)]
@@ -586,6 +585,6 @@ mod tests {
         let array = list.list();
         array.add("v1");
 
-        assert_eq!("message-2", traverse(root.into(), ".k2.k3.n6[1]").unwrap().as_text().unwrap())
+        assert_eq!("message-2", TypeJson::from(root).traverse(".k2.k3.n6[1]").unwrap().as_text().unwrap())
     }
 }
