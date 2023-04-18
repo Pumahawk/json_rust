@@ -313,6 +313,8 @@ impl Automa for ObjectAutoma {
                     let array_automa = ArrayAutoma::new();
                     let number_automa = NumberAutoma::new();
                     let null_automa = StringAutoma::from("null");
+                    let true_automa = StringAutoma::from("true");
+                    let false_automa = StringAutoma::from("false");
                     match c {
                         c if is_space(c) => continue,
                         c if json_automa.can_start(c) => {
@@ -340,6 +342,26 @@ impl Automa for ObjectAutoma {
                             match result {
                                 Ok(_) => {
                                     json_object.set(&key.take().unwrap(), json::null());
+                                    status = ObjectAtm::N5;
+                                },
+                                Err(msg) => return Err(msg),
+                            }
+                        },
+                        c if true_automa.can_start(c) => {
+                            let result = true_automa.process(c, &mut iter);
+                            match result {
+                                Ok(_) => {
+                                    json_object.set(&key.take().unwrap(), true);
+                                    status = ObjectAtm::N5;
+                                },
+                                Err(msg) => return Err(msg),
+                            }
+                        },
+                        c if false_automa.can_start(c) => {
+                            let result = false_automa.process(c, &mut iter);
+                            match result {
+                                Ok(_) => {
+                                    json_object.set(&key.take().unwrap(), false);
                                     status = ObjectAtm::N5;
                                 },
                                 Err(msg) => return Err(msg),
@@ -429,6 +451,8 @@ impl Automa for ArrayAutoma {
                     let object_automa = ObjectAutoma::new();
                     let array_automa = ArrayAutoma::new();
                     let null_automa = StringAutoma::from("null");
+                    let false_automa = StringAutoma::from("false");
+                    let true_automa = StringAutoma::from("true");
                     match c {
                         ']' => return Ok(json_array),
                         c if is_space(c) => {},
@@ -470,6 +494,26 @@ impl Automa for ArrayAutoma {
                             }
                             _ => return Err(ParserError::from("Invalid ArrayAtm::N2, null_automa").into()),
                         }
+                        c if true_automa.can_start(c) => {
+                            let result = true_automa.process(c, &mut iter);
+                            match result {
+                                Ok(_) => {
+                                    json_array.add(true);
+                                    status = ArrayAtm::N3;
+                                },
+                                Err(msg) => return Err(msg),
+                            }
+                        },
+                        c if false_automa.can_start(c) => {
+                            let result = false_automa.process(c, &mut iter);
+                            match result {
+                                Ok(_) => {
+                                    json_array.add(false);
+                                    status = ArrayAtm::N3;
+                                },
+                                Err(msg) => return Err(msg),
+                            }
+                        },
                         _ => return Err(ParserError::from("Invalid ArrayAtm::N2").into()),
                     }
                 },
@@ -878,12 +922,16 @@ mod test {
             "name": "Foo",
             "username": "Paa",
             "age": 32.0,
+            "valid": true,
+            "notValid": false,
             "tags": ["t1", "t2"]
         }"###);
         let mut user = json::parser(input.chars()).unwrap();
         assert_eq!("Foo", user.get("name").unwrap().as_text().unwrap());
         assert_eq!("Paa", user.get("username").unwrap().as_text().unwrap());
         assert_eq!(32.0, *user.get("age").unwrap().as_number().unwrap());
+        assert_eq!(true, *user.get("valid").unwrap().as_bool().unwrap());
+        assert_eq!(false, *user.get("notValid").unwrap().as_bool().unwrap());
         let tags = user.get("tags").unwrap().as_list().unwrap();
         assert_eq!("t1", tags.get(0).unwrap().as_text().unwrap());
         assert_eq!("t2", tags.get(1).unwrap().as_text().unwrap());
