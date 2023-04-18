@@ -255,6 +255,10 @@ impl ListJson {
     pub fn iter_mut(&mut self) -> impl Iterator<Item=&mut TypeJson> {
         self.list.iter_mut()
     }
+
+    pub fn into_iter(self) -> impl Iterator<Item=TypeJson> {
+        self.list.into_iter()
+    }
 }
 
 impl ToString for ListJson {
