@@ -392,7 +392,7 @@ impl <'a> ReaderJson<'a> {
         
     }
 
-    pub fn json(&self) -> &TypeJson {
+    pub fn json(&self) -> &'a TypeJson {
         match self.root {
             Some(node) => node,
             _ => &NULL_JSON,
