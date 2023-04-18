@@ -400,6 +400,27 @@ impl <'a> ReaderJson<'a> {
     }
 }
 
+pub fn traverse(root: TypeJson, path: &str) -> Result<TypeJson, String> {
+    let mut ret = root;
+    let mut chars = path.chars();
+    let mut automa = crate::automa::KeyParseQueryAutoma::new(&mut chars);
+    while let Some(token) = automa.next() {
+        match token {
+            crate::automa::KeyParseQueryToken::Key(key) => ret = match ret {
+                TypeJson::Object(mut obj) => obj.remove(&key).ok_or("Unable to traverse")?,
+                _ => TypeJson::Null, 
+            },
+            crate::automa::KeyParseQueryToken::Index(i) => ret = match ret {
+                TypeJson::List(mut list) => list.remove(i),
+                _ => TypeJson::Null, 
+            },
+            crate::automa::KeyParseQueryToken::Error(msg) => return Err(msg),
+        };
+    }
+    Ok(ret)
+
+}
+
 
 
 #[cfg(test)]
@@ -540,6 +561,27 @@ mod tests {
             TypeJson::Boolean(bl) => assert!(bl),
             _ => assert!(false),
         }
+    }
 
+    #[test]
+    fn traverse_test() {
+        let mut root = object();
+        let node = root.object("k1");
+        node.set("n1", "value1");
+        node.set("n2", "value2");
+        let node = root.object("k2");
+        node.set("n3", "value1");
+        node.set("n4", "value2");
+        let node = node.object("k3");
+        node.set("n5", "value-sub1");
+        let list = node.list("n6");
+        list.add("message-1");
+        list.add("message-2");
+        let obj = list.object();
+        obj.set("k1", "v1");
+        let array = list.list();
+        array.add("v1");
+
+        assert_eq!("message-2", traverse(root.into(), ".k2.k3.n6[1]").unwrap().as_text().unwrap())
     }
 }
