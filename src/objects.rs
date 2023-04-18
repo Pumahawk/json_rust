@@ -7,6 +7,7 @@ pub enum TypeJson {
     List(ListJson),
     Text(String),
     Number(f32),
+    Boolean(bool),
     Null,
 }
 
@@ -59,6 +60,18 @@ impl TypeJson {
             _ => None,
         }
     }
+    pub fn as_bool(&self) -> Option<&bool> {
+        match self {
+            TypeJson::Boolean(boolean) => Some(boolean),
+            _ => None,
+        }
+    }
+    pub fn as_bool_mut(&mut self) -> Option<&mut bool> {
+        match self {
+            TypeJson::Boolean(boolean) => Some(boolean),
+            _ => None,
+        }
+    }
     pub fn is_null(&self) -> bool {
         match self {
             TypeJson::Null => true,
@@ -74,6 +87,7 @@ impl ToString for TypeJson {
             TypeJson::List(list) => list.to_string(),
             TypeJson::Text(txt) => string_to_json_escape(txt),
             TypeJson::Number(num) => num.to_string(),
+            TypeJson::Boolean(b) => b.to_string(),
             TypeJson::Null => String::from("null"),
         }
     }
@@ -279,6 +293,12 @@ impl From<&str> for TypeJson {
 impl From<f32> for TypeJson {
     fn from(value: f32) -> Self {
         TypeJson::Number(value)
+    }
+}
+
+impl From<bool> for TypeJson {
+    fn from(value: bool) -> Self {
+        TypeJson::Boolean(value)
     }
 }
 
@@ -510,5 +530,16 @@ mod tests {
         assert_eq!(
             "{\"k1\":[12.1]}",
             root.to_string());
+    }
+
+    #[test]
+    fn bool_json() {
+        let mut root = object();
+        root.set("k", true);
+        match root.get("k").unwrap() {
+            TypeJson::Boolean(bl) => assert!(bl),
+            _ => assert!(false),
+        }
+
     }
 }
