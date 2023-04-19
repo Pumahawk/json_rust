@@ -286,6 +286,24 @@ impl std::iter::IntoIterator for ListJson {
     }
 }
 
+impl <'a> std::iter::IntoIterator for &'a ListJson {
+    type Item = &'a TypeJson;
+    type IntoIter = std::slice::Iter<'a, TypeJson>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.list[..].iter()
+    }
+}
+
+impl <'a> std::iter::IntoIterator for &'a mut ListJson {
+    type Item = &'a mut TypeJson;
+    type IntoIter = std::slice::IterMut<'a, TypeJson>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.list[..].iter_mut()
+    }
+}
+
 impl ToString for ListJson {
     fn to_string(&self)  -> String {
         std::iter::once('[')
