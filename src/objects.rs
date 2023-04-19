@@ -275,8 +275,13 @@ impl ListJson {
     pub fn iter_mut(&mut self) -> impl Iterator<Item=&mut TypeJson> {
         self.list.iter_mut()
     }
+}
 
-    pub fn into_iter(self) -> impl Iterator<Item=TypeJson> {
+impl std::iter::IntoIterator for ListJson {
+    type Item = TypeJson;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
         self.list.into_iter()
     }
 }
