@@ -273,6 +273,12 @@ impl Automa for ObjectAutoma {
         let mut json_object = json::object();
         let mut key_pipe = std::collections::LinkedList::new();
         let mut object_pipe = std::collections::LinkedList::new();
+        let str_automa = StrAutoma::new();
+        let array_automa = ArrayAutoma::new();
+        let number_automa = NumberAutoma::new();
+        let null_automa = StringAutoma::from("null");
+        let true_automa = StringAutoma::from("true");
+        let false_automa = StringAutoma::from("false");
         while let Some(c) = iter.next() {
             match status {
                 ObjectAtm::N1 => {
@@ -310,12 +316,6 @@ impl Automa for ObjectAutoma {
                     }
                 },
                 ObjectAtm::N4 => {
-                    let str_automa = StrAutoma::new();
-                    let array_automa = ArrayAutoma::new();
-                    let number_automa = NumberAutoma::new();
-                    let null_automa = StringAutoma::from("null");
-                    let true_automa = StringAutoma::from("true");
-                    let false_automa = StringAutoma::from("false");
                     match c {
                         c if is_space(c) => continue,
                         '{' => {
@@ -441,6 +441,13 @@ impl Automa for ArrayAutoma {
         let mut iter: Box<dyn Iterator<Item=char>> = Box::new(std::iter::empty().chain(iter));
         let mut status = ArrayAtm::N1;
         let mut json_array = json::array();
+        let string_automa = StrAutoma::new();
+        let number_automa = NumberAutoma::new();
+        let object_automa = ObjectAutoma::new();
+        let array_automa = ArrayAutoma::new();
+        let null_automa = StringAutoma::from("null");
+        let false_automa = StringAutoma::from("false");
+        let true_automa = StringAutoma::from("true");
         while let Some(c) = iter.next() {
             match status {
                 ArrayAtm::N1 => {
@@ -452,13 +459,6 @@ impl Automa for ArrayAutoma {
                     }
                 },
                 ArrayAtm::N2 => {
-                    let string_automa = StrAutoma::new();
-                    let number_automa = NumberAutoma::new();
-                    let object_automa = ObjectAutoma::new();
-                    let array_automa = ArrayAutoma::new();
-                    let null_automa = StringAutoma::from("null");
-                    let false_automa = StringAutoma::from("false");
-                    let true_automa = StringAutoma::from("true");
                     match c {
                         ']' => return Ok(json_array),
                         c if is_space(c) => {},
