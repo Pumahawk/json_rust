@@ -15,8 +15,8 @@ impl <T: Iterator<Item=char>> StoreBufferIterator<T> {
         }
     }
 
-    pub fn store(&self) -> &std::collections::LinkedList<char> {
-        &self.store
+    pub fn store(&self) -> impl Iterator<Item = &char> {
+        self.store.iter()
     }
     
     fn store_c(&mut self, c: char) {
@@ -1034,6 +1034,6 @@ mod test {
         assert_eq!('t', input.next().unwrap());
         assert_eq!('e', input.next().unwrap());
 
-        assert_eq!("te", input.store().iter().collect::<String>());
+        assert_eq!("te", input.store().collect::<String>());
     }
 }
