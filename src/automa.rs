@@ -90,7 +90,7 @@ impl From<DetailError> for AutomaError {
     }
 }
 
-type AutomaResult<T> = Result<T, DetailError>;
+type AutomaResult<T> = Result<T, AutomaError>;
 
 #[derive(Debug)]
 pub struct ParserError {
@@ -126,6 +126,12 @@ impl From<&str> for ParserError {
 impl From<ParserError> for DetailError {
     fn from(value: ParserError) -> Self {
         DetailError::Parser(value)
+    }
+}
+
+impl From<ParserError> for AutomaError {
+    fn from(value: ParserError) -> Self {
+        Into::<DetailError>::into(value).into()
     }
 }
 
@@ -690,7 +696,7 @@ impl <'a, T: Iterator<Item=char>> Iterator for KeyParseQueryAutoma<'a, T> {
                                 self.status = KeyParseQueryAtm::N1;
                                 return Some(KeyParseQueryToken::Key(key));
                             },
-                            Err(error) => match error {
+                            Err(error) => match error.source {
                                 DetailError::Parser(msg) => return Some(KeyParseQueryToken::Error(format!("Error reading {}", msg))),
                             }
                         }
@@ -758,11 +764,9 @@ pub fn parser(iter: impl Iterator<Item=char>) -> AutomaResult<json::ObjectJson> 
     let mut buffer = StoreBufferIterator::new(10, iter);
     match ObjectAutoma::new().start(&mut buffer) {
         Ok(obj) => Ok(obj),
-        Err(err) => match err {
-            DetailError::Parser(per) => Err(DetailError::Parser(ParserError {
-                message: format!("{}\nReader: {}", per.message, buffer.into_iter().collect::<String>()),
-                ..per
-            }))
+        Err(err) => {
+            let message = format!("Stream read: {}", buffer.into_iter().collect::<String>());
+            Err(AutomaError::new(message, err.source))
         }
     }
 }
@@ -1040,7 +1044,7 @@ mod test {
         let input = r##"{"key": error
         "##;
         let error = json::parser(input.chars()).err().unwrap();
-        assert_eq!("invalid from node: N4\nReader: {\"key\": e", error.to_string())
+        assert_eq!("Stream read: {\"key\": e", error.to_string())
     }
 
     #[test]
