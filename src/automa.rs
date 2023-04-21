@@ -1,5 +1,46 @@
 use crate::objects as json;
 
+struct StoreBufferIterator<T> {
+    size: usize,
+    store: std::collections::LinkedList<char>,
+    iterator: T,
+}
+
+impl <T: Iterator<Item=char>> StoreBufferIterator<T> {
+    pub fn new(iter: T) -> Self {
+        StoreBufferIterator {
+            size: 0,
+            store: std::collections::LinkedList::new(),
+            iterator: iter,
+        }
+    }
+
+    pub fn store(&self) -> &std::collections::LinkedList<char> {
+        &self.store
+    }
+    
+    fn store_c(&mut self, c: char) {
+        self.store.push_back(c);
+        if self.store.len() >= self.size {
+            self.store.pop_front();
+        }
+    }
+}
+
+impl <T: Iterator<Item=char>> Iterator for StoreBufferIterator<T> {
+    type Item = char;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.iterator.next() {
+            Some(c) => {
+                self.store_c(c);
+                Some(c)
+            },
+            None => None,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum AutomaError {
     Parser(ParserError),
