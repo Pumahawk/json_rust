@@ -271,6 +271,8 @@ impl Automa for ObjectAutoma {
         let mut status = ObjectAtm::N1;
         let mut key = None;
         let mut json_object = json::object();
+        let mut key_pipe = std::collections::LinkedList::new();
+        let mut object_pipe = std::collections::LinkedList::new();
         while let Some(c) = iter.next() {
             match status {
                 ObjectAtm::N1 => {
@@ -309,7 +311,6 @@ impl Automa for ObjectAutoma {
                 },
                 ObjectAtm::N4 => {
                     let str_automa = StrAutoma::new();
-                    let json_automa = ObjectAutoma::new();
                     let array_automa = ArrayAutoma::new();
                     let number_automa = NumberAutoma::new();
                     let null_automa = StringAutoma::from("null");
@@ -317,15 +318,11 @@ impl Automa for ObjectAutoma {
                     let false_automa = StringAutoma::from("false");
                     match c {
                         c if is_space(c) => continue,
-                        c if json_automa.can_start(c) => {
-                            let result = json_automa.process(c, &mut iter);
-                            match result {
-                                Ok(value) => {
-                                    json_object.set(&key.take().unwrap(), value);
-                                },
-                                Err(msg) => return Err(msg),
-                            }
-                            status = ObjectAtm::N5;
+                        '{' => {
+                            object_pipe.push_front(json_object);
+                            key_pipe.push_front(key.take().unwrap());
+                            json_object = json::object();
+                            status = ObjectAtm::N2;
                         },
                         c if array_automa.can_start(c) => {
                             let result = array_automa.process(c, &mut iter);
@@ -396,7 +393,16 @@ impl Automa for ObjectAutoma {
                 ObjectAtm::N5 => {
                     match c {
                         c if is_space(c) => continue,
-                        '}' => return Ok(json_object),
+                        '}' => {
+                            match object_pipe.pop_front() {
+                                Some(mut obj) => {
+                                    obj.set(&key_pipe.pop_front().unwrap(), json_object);
+                                    json_object = obj;
+                                    status = ObjectAtm::N5;
+                                },
+                                None => return Ok(json_object),
+                            }
+                        }
                         ',' => {
                             status = ObjectAtm::N2;
                         }
@@ -924,7 +930,12 @@ mod test {
             "age": 32.0,
             "valid": true,
             "notValid": false,
-            "tags": ["t1", "t2"]
+            "tags": ["t1", "t2"],
+            "sub": {
+                "sub2": {
+                    "subk": "subv"
+                }
+            }
         }"###);
         let mut user = json::parser(input.chars()).unwrap();
         assert_eq!("Foo", user.get("name").unwrap().as_text().unwrap());
@@ -940,6 +951,8 @@ mod test {
             Some(TypeJson::List(list)) => assert_eq!(Some("t2"), list.get(1).unwrap().as_text()),
             _ => assert!(false),
         }
+
+        assert_eq!("subv", TypeJson::from(user).traverse(".sub.sub2.subk").unwrap().as_text().unwrap());
     }
 
     #[test]
