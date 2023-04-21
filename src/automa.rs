@@ -42,22 +42,55 @@ impl <T: Iterator<Item=char>> Iterator for StoreBufferIterator<T> {
 }
 
 #[derive(Debug)]
-pub enum AutomaError {
-    Parser(ParserError),
+pub struct AutomaError {
+    message: String,
+    source: DetailError,
 }
 
-impl std::fmt::Display for AutomaError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        match self {
-            AutomaError::Parser(error) => write!(f, "{}", error.message())
+impl AutomaError {
+    pub fn new(message: String, source: DetailError) -> AutomaError {
+        AutomaError {
+            message,
+            source,
         }
     }
 }
 
-impl std::error::Error for AutomaError {
+impl std::fmt::Display for AutomaError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{}", self.message)
+    }
 }
 
-type AutomaResult<T> = Result<T, AutomaError>;
+impl std::error::Error for AutomaError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(&self.source)
+    }
+}
+
+#[derive(Debug)]
+pub enum DetailError {
+    Parser(ParserError),
+}
+
+impl std::fmt::Display for DetailError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            DetailError::Parser(error) => write!(f, "{}", error.message())
+        }
+    }
+}
+
+impl std::error::Error for DetailError {
+}
+
+impl From<DetailError> for AutomaError {
+    fn from(detail: DetailError) -> Self {
+        AutomaError::new("Automa error".to_string(), detail)
+    }
+}
+
+type AutomaResult<T> = Result<T, DetailError>;
 
 #[derive(Debug)]
 pub struct ParserError {
@@ -90,9 +123,9 @@ impl From<&str> for ParserError {
     }
 }
 
-impl From<ParserError> for AutomaError {
+impl From<ParserError> for DetailError {
     fn from(value: ParserError) -> Self {
-        AutomaError::Parser(value)
+        DetailError::Parser(value)
     }
 }
 
@@ -658,7 +691,7 @@ impl <'a, T: Iterator<Item=char>> Iterator for KeyParseQueryAutoma<'a, T> {
                                 return Some(KeyParseQueryToken::Key(key));
                             },
                             Err(error) => match error {
-                                AutomaError::Parser(msg) => return Some(KeyParseQueryToken::Error(format!("Error reading {}", msg))),
+                                DetailError::Parser(msg) => return Some(KeyParseQueryToken::Error(format!("Error reading {}", msg))),
                             }
                         }
                     }
@@ -726,7 +759,7 @@ pub fn parser(iter: impl Iterator<Item=char>) -> AutomaResult<json::ObjectJson> 
     match ObjectAutoma::new().start(&mut buffer) {
         Ok(obj) => Ok(obj),
         Err(err) => match err {
-            AutomaError::Parser(per) => Err(AutomaError::Parser(ParserError {
+            DetailError::Parser(per) => Err(DetailError::Parser(ParserError {
                 message: format!("{}\nReader: {}", per.message, buffer.into_iter().collect::<String>()),
                 ..per
             }))
