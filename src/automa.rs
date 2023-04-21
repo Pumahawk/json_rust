@@ -1026,4 +1026,14 @@ mod test {
             }
         }
     }
+
+    #[test]
+    fn buffer_store() {
+        let mut input = StoreBufferIterator::new(10, "text".chars());
+        
+        assert_eq!('t', input.next().unwrap());
+        assert_eq!('e', input.next().unwrap());
+
+        assert_eq!("te", input.store().iter().collect::<String>());
+    }
 }
