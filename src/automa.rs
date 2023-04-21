@@ -15,9 +15,9 @@ impl <T: Iterator<Item=char>> StoreBufferIterator<T> {
         }
     }
 
-    pub fn store(&self) -> impl Iterator<Item = &char> {
-        self.store.iter()
-    }
+    pub fn into_iter(self) -> impl Iterator<Item = char> {
+        self.store.into_iter()
+    } 
     
     fn store_c(&mut self, c: char) {
         self.store.push_back(c);
@@ -721,8 +721,17 @@ fn is_char(c: char) -> bool {
     (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
 }
 
-pub fn parser(mut iter: impl Iterator<Item=char>) -> AutomaResult<json::ObjectJson> {
-    ObjectAutoma::new().start(&mut iter)
+pub fn parser(iter: impl Iterator<Item=char>) -> AutomaResult<json::ObjectJson> {
+    let mut buffer = StoreBufferIterator::new(10, iter);
+    match ObjectAutoma::new().start(&mut buffer) {
+        Ok(obj) => Ok(obj),
+        Err(err) => match err {
+            AutomaError::Parser(per) => Err(AutomaError::Parser(ParserError {
+                message: format!("{}\nReader: {}", per.message, buffer.into_iter().collect::<String>()),
+                ..per
+            }))
+        }
+    }
 }
 
 #[cfg(test)]
@@ -994,6 +1003,11 @@ mod test {
         }
 
         assert_eq!("subv", TypeJson::from(user).traverse(".sub.sub2.subk").unwrap().as_text().unwrap());
+
+        let input = r##"{"key": error
+        "##;
+        let error = json::parser(input.chars()).err().unwrap();
+        assert_eq!("invalid from node: N4\nReader: {\"key\": e", error.to_string())
     }
 
     #[test]
@@ -1034,6 +1048,6 @@ mod test {
         assert_eq!('t', input.next().unwrap());
         assert_eq!('e', input.next().unwrap());
 
-        assert_eq!("te", input.store().collect::<String>());
+        assert_eq!("te", input.into_iter().collect::<String>());
     }
 }
