@@ -1,5 +1,46 @@
 use crate::objects as json;
 
+struct StoreBufferIterator<T> {
+    size: usize,
+    store: std::collections::LinkedList<char>,
+    iterator: T,
+}
+
+impl <T: Iterator<Item=char>> StoreBufferIterator<T> {
+    pub fn new(size: usize, iter: T) -> Self {
+        StoreBufferIterator {
+            size,
+            store: std::collections::LinkedList::new(),
+            iterator: iter,
+        }
+    }
+
+    pub fn into_iter(self) -> impl Iterator<Item = char> {
+        self.store.into_iter()
+    } 
+    
+    fn store_c(&mut self, c: char) {
+        self.store.push_back(c);
+        if self.store.len() >= self.size {
+            self.store.pop_front();
+        }
+    }
+}
+
+impl <T: Iterator<Item=char>> Iterator for StoreBufferIterator<T> {
+    type Item = char;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.iterator.next() {
+            Some(c) => {
+                self.store_c(c);
+                Some(c)
+            },
+            None => None,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum AutomaError {
     Parser(ParserError),
@@ -680,8 +721,17 @@ fn is_char(c: char) -> bool {
     (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
 }
 
-pub fn parser(mut iter: impl Iterator<Item=char>) -> AutomaResult<json::ObjectJson> {
-    ObjectAutoma::new().start(&mut iter)
+pub fn parser(iter: impl Iterator<Item=char>) -> AutomaResult<json::ObjectJson> {
+    let mut buffer = StoreBufferIterator::new(10, iter);
+    match ObjectAutoma::new().start(&mut buffer) {
+        Ok(obj) => Ok(obj),
+        Err(err) => match err {
+            AutomaError::Parser(per) => Err(AutomaError::Parser(ParserError {
+                message: format!("{}\nReader: {}", per.message, buffer.into_iter().collect::<String>()),
+                ..per
+            }))
+        }
+    }
 }
 
 #[cfg(test)]
@@ -953,6 +1003,11 @@ mod test {
         }
 
         assert_eq!("subv", TypeJson::from(user).traverse(".sub.sub2.subk").unwrap().as_text().unwrap());
+
+        let input = r##"{"key": error
+        "##;
+        let error = json::parser(input.chars()).err().unwrap();
+        assert_eq!("invalid from node: N4\nReader: {\"key\": e", error.to_string())
     }
 
     #[test]
@@ -984,5 +1039,15 @@ mod test {
                 _ => assert!(false),
             }
         }
+    }
+
+    #[test]
+    fn buffer_store() {
+        let mut input = StoreBufferIterator::new(10, "text".chars());
+        
+        assert_eq!('t', input.next().unwrap());
+        assert_eq!('e', input.next().unwrap());
+
+        assert_eq!("te", input.into_iter().collect::<String>());
     }
 }
