@@ -7,9 +7,9 @@ struct StoreBufferIterator<T> {
 }
 
 impl <T: Iterator<Item=char>> StoreBufferIterator<T> {
-    pub fn new(iter: T) -> Self {
+    pub fn new(size: usize, iter: T) -> Self {
         StoreBufferIterator {
-            size: 0,
+            size,
             store: std::collections::LinkedList::new(),
             iterator: iter,
         }
