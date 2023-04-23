@@ -1,5 +1,8 @@
 use crate::objects as json;
 
+use ::automa as atm;
+use atm::Linkable;
+
 struct StoreBufferIterator<T> {
     size: usize,
     store: std::collections::LinkedList<char>,
@@ -148,10 +151,6 @@ pub trait Automa {
 
 }
 
-enum StrAtm {
-    N1, N2, N3,
-}
-
 struct StrAutoma {   
 }
 
@@ -171,43 +170,32 @@ impl Automa for StrAutoma {
     }
 
     fn start(&self, iter: &mut dyn Iterator<Item=Self::Input>) -> AutomaResult<Self::Output> {
-        let mut status = StrAtm::N1;
-        let mut chars = Vec::new();
-        for c in iter {
-            match status {
-                StrAtm::N1 => {
-                    match c {
-                        '"' => {
-                            status = StrAtm::N2;
-                        },
-                        _ => return Err(ParserError::from("invalid").into()),
-                    }
-                },
-                StrAtm::N2 => {
-                    match c {
-                        '"' => return Ok(chars.iter().collect()),
-                        '\\' => status = StrAtm::N3,
-                        c => chars.push(c),
-                    }
-                },
-                StrAtm::N3 => {
-                    match c {
-                        '\\' => escape(&mut status, &mut chars, '\\'),
-                        'n' => escape(&mut status, &mut chars, '\n'),
-                        'r' => escape(&mut status, &mut chars, '\r'),
-                        't' => escape(&mut status, &mut chars, '\t'),
-                        '"' => escape(&mut status, &mut chars, '"'),
-                        _ => return Err(ParserError::from("Invalid escape").into()),
-                    }
 
-                    fn escape(status: &mut StrAtm, chars: &mut Vec<char>, c: char) {
-                        chars.push(c);
-                        *status = StrAtm::N2;
-                    }
-                }
-            }
+        enum StrAtm {
+            EndStr,
+            Invalid,
         }
-        Err(ParserError::from("unable to retrieve str").into())
+        
+        type StrNode = atm::Node<char, Result<(), &'static str>>;
+        
+        let mut key = std::rc::Rc::new(
+            std::cell::RefCell::new(
+                std::collections::LinkedList::<char>::new()
+            )
+        );
+        
+        let mut n1 = StrNode::new();
+        let mut n2 = StrNode::new();
+        let mut n3 = StrNode::new();
+        let mut n4 = StrNode::new();
+
+        n1.link(Some(&n2), atm::eq('"'));
+        n2.link(None, |_| true);
+        n2.link(Some(&n3), atm::eq('\''));
+        n2.link(Some(&n4), atm::eq('"'));
+        n3.link(Some(&n2), |_| true);
+
+        todo!();
     }
 }
 

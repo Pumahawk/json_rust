@@ -3,6 +3,6 @@ mod automa;
 
 pub use objects::*;
 
-pub use automa::parser;
-pub use automa::KeyParseQueryAutoma;
-pub use automa::KeyParseQueryToken;
+pub use crate::automa::parser;
+pub use crate::automa::KeyParseQueryAutoma;
+pub use crate::automa::KeyParseQueryToken;
