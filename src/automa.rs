@@ -173,11 +173,12 @@ impl Automa for StrAutoma {
 
         enum StrAtm {
             EndStr,
+            None,
         }
         
         type StrNode = atm::Node<char, Result<StrAtm, &'static str>>;
         
-        let mut key = std::rc::Rc::new(
+        let key = std::rc::Rc::new(
             std::cell::RefCell::new(
                 std::collections::LinkedList::<char>::new()
             )
@@ -191,10 +192,25 @@ impl Automa for StrAutoma {
         let mut fail = StrNode::new();
 
         n1.link(Some(&n2), atm::eq('"'));
-        n2.link(None, |_| true);
+        let kp = std::rc::Rc::clone(&key);
+        n2.link_process(None, |c| c != &'\\', move |c| {
+            kp.borrow_mut().push_back(*c);
+            Ok(StrAtm::None)
+        });
         n2.link(Some(&n3), atm::eq('\''));
-        n2.link(Some(&n4), atm::eq('"'));
-        n3.link(Some(&n2), |_| true);
+        n2.link_process(Some(&n4), atm::eq('"'), |_| Ok(StrAtm::EndStr));
+        let kp = std::rc::Rc::clone(&key);
+        n3.link_process(Some(&n2), |_| true, move |c| {
+            match c {
+                '\\' => kp.borrow_mut().push_back('\\'),
+                'n' => kp.borrow_mut().push_back('\n'),
+                'r' => kp.borrow_mut().push_back('\r'),
+                't' => kp.borrow_mut().push_back('\t'),
+                '"' => kp.borrow_mut().push_back('"'),
+                _ => return Err("Invalid escape"),
+            }
+            Ok(StrAtm::None)
+        });
 
         n1.link_process(Some(&fail), |_| true, |_| Err("Invalid char in node n1"));
         n2.link_process(Some(&fail), |_| true, |_| Err("Invalid char in node n2"));
