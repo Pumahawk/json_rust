@@ -173,10 +173,9 @@ impl Automa for StrAutoma {
 
         enum StrAtm {
             EndStr,
-            Invalid,
         }
         
-        type StrNode = atm::Node<char, Result<(), &'static str>>;
+        type StrNode = atm::Node<char, Result<StrAtm, &'static str>>;
         
         let mut key = std::rc::Rc::new(
             std::cell::RefCell::new(
@@ -189,13 +188,31 @@ impl Automa for StrAutoma {
         let mut n3 = StrNode::new();
         let mut n4 = StrNode::new();
 
+        let mut fail = StrNode::new();
+
         n1.link(Some(&n2), atm::eq('"'));
         n2.link(None, |_| true);
         n2.link(Some(&n3), atm::eq('\''));
         n2.link(Some(&n4), atm::eq('"'));
         n3.link(Some(&n2), |_| true);
 
-        todo!();
+        n1.link_process(Some(&fail), |_| true, |_| Err("Invalid char in node n1"));
+        n2.link_process(Some(&fail), |_| true, |_| Err("Invalid char in node n2"));
+        n3.link_process(Some(&fail), |_| true, |_| Err("Invalid char in node n3"));
+        n4.link_process(Some(&fail), |_| true, |_| Err("Invalid char in node n4"));
+        fail.link_process(None, |_| true, |_| Err("Invalid char in node fail"));
+
+        let mut cursor = atm::Cursor::new(&n1);
+        
+        while let Some(c) = iter.next() {
+            match cursor.action(&c) {
+                Some(Ok(StrAtm::EndStr)) => return Ok(key.take().iter().collect()),
+                Some(Err(msg)) => return Err(ParserError::new(msg.to_string()).into()),
+                _ => {},
+            }
+        }
+        
+        Err(ParserError::new("End Str iterator".to_string()).into())
     }
 }
 
