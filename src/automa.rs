@@ -193,7 +193,7 @@ impl Automa for StrAutoma {
 
         n1.link(Some(&n2), atm::eq('"'));
         let kp = std::rc::Rc::clone(&key);
-        n2.link(Some(&n3), atm::eq('\''));
+        n2.link(Some(&n3), atm::eq('\\'));
         n2.link_process(Some(&n4), atm::eq('"'), |_| Ok(StrAtm::EndStr));
         n2.link_process(None, |c| c != &'\\', move |c| {
             kp.borrow_mut().push_back(*c);
@@ -827,10 +827,9 @@ mod test {
         assert_eq!(": 1234", rest);
 
         let input = String::from("\"\\n\\\"\"");
-        if let Ok(msg) = str_automa.start(&mut input.chars()) {
-            assert_eq!("\n\"", msg);
-        } else {
-            assert!(false);
+        match str_automa.start(&mut input.chars()) {
+            Ok(msg) => assert_eq!("\n\"", msg),
+            _ => assert!(false),
         }
         
     }
