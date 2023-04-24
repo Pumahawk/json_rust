@@ -173,7 +173,6 @@ impl Automa for StrAutoma {
 
         enum StrAtm {
             EndStr,
-            None,
         }
         
         type StrNode = atm::Node<char, Result<StrAtm, &'static str>>;
@@ -194,29 +193,26 @@ impl Automa for StrAutoma {
         n1.link(Some(&n2), atm::eq('"'));
         let kp = std::rc::Rc::clone(&key);
         n2.link(Some(&n3), atm::eq('\\'));
-        n2.link_process(Some(&n4), atm::eq('"'), |_| Ok(StrAtm::EndStr));
-        n2.link_process(None, |c| c != &'\\', move |c| {
-            kp.borrow_mut().push_back(*c);
-            Ok(StrAtm::None)
-        });
+        n2.link_function(Some(&n4), atm::eq('"'), |_| Some(Ok(StrAtm::EndStr)));
+        n2.link_process(None, |c| c != &'\\', move |c| kp.borrow_mut().push_back(*c));
         let kp = std::rc::Rc::clone(&key);
-        n3.link_process(Some(&n2), |_| true, move |c| {
+        n3.link_function(Some(&n2), |_| true, move |c| {
             match c {
                 '\\' => kp.borrow_mut().push_back('\\'),
                 'n' => kp.borrow_mut().push_back('\n'),
                 'r' => kp.borrow_mut().push_back('\r'),
                 't' => kp.borrow_mut().push_back('\t'),
                 '"' => kp.borrow_mut().push_back('"'),
-                _ => return Err("Invalid escape"),
+                _ => return Some(Err("Invalid escape")),
             }
-            Ok(StrAtm::None)
+            None
         });
 
-        n1.link_process(Some(&fail), |_| true, |_| Err("Invalid char in node n1"));
-        n2.link_process(Some(&fail), |_| true, |_| Err("Invalid char in node n2"));
-        n3.link_process(Some(&fail), |_| true, |_| Err("Invalid char in node n3"));
-        n4.link_process(Some(&fail), |_| true, |_| Err("Invalid char in node n4"));
-        fail.link_process(None, |_| true, |_| Err("Invalid char in node fail"));
+        n1.link_function(Some(&fail), |_| true, |_| Some(Err("Invalid char in node n1")));
+        n2.link_function(Some(&fail), |_| true, |_| Some(Err("Invalid char in node n2")));
+        n3.link_function(Some(&fail), |_| true, |_| Some(Err("Invalid char in node n3")));
+        n4.link_function(Some(&fail), |_| true, |_| Some(Err("Invalid char in node n4")));
+        fail.link_function(None, |_| true, |_| Some(Err("Invalid char in node fail")));
 
         let mut cursor = atm::Cursor::new(&n1);
         
