@@ -193,12 +193,12 @@ impl Automa for StrAutoma {
 
         n1.link(Some(&n2), atm::eq('"'));
         let kp = std::rc::Rc::clone(&key);
+        n2.link(Some(&n3), atm::eq('\''));
+        n2.link_process(Some(&n4), atm::eq('"'), |_| Ok(StrAtm::EndStr));
         n2.link_process(None, |c| c != &'\\', move |c| {
             kp.borrow_mut().push_back(*c);
             Ok(StrAtm::None)
         });
-        n2.link(Some(&n3), atm::eq('\''));
-        n2.link_process(Some(&n4), atm::eq('"'), |_| Ok(StrAtm::EndStr));
         let kp = std::rc::Rc::clone(&key);
         n3.link_process(Some(&n2), |_| true, move |c| {
             match c {
