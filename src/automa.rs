@@ -175,7 +175,7 @@ impl Automa for StrAutoma {
             EndStr,
         }
         
-        type StrNode = atm::Node<char, Result<StrAtm, &'static str>>;
+        type StrNode = atm::ANode<char, Result<StrAtm, &'static str>>;
         
         let key = std::rc::Rc::new(
             std::cell::RefCell::new(
@@ -183,12 +183,12 @@ impl Automa for StrAutoma {
             )
         );
         
-        let mut n1 = StrNode::new();
-        let mut n2 = StrNode::new();
-        let mut n3 = StrNode::new();
-        let mut n4 = StrNode::new();
+        let mut n1: StrNode = atm::node();
+        let mut n2: StrNode = atm::node();
+        let mut n3: StrNode = atm::node();
+        let mut n4: StrNode = atm::node();
 
-        let mut fail = StrNode::new();
+        let mut fail: StrNode = atm::node();
 
         n1.link(Some(&n2), atm::eq('"'));
         let kp = std::rc::Rc::clone(&key);
