@@ -295,6 +295,7 @@ impl Automa for NumberAutoma {
         
         type Node = atm::ANode<bool, char, Result<NumAtm, &'static str>, NumContext>;
 
+        let mut n0: Node = atm::node();
         let mut n1: Node = atm::node();
         let mut n2: Node = true.into();
         let mut n3: Node = true.into();
@@ -304,6 +305,17 @@ impl Automa for NumberAutoma {
         let mut n7: Node = atm::node();
         let mut n8: Node = true.into();
 
+        n0.link_process(Some(&n1), atm::eq('-'), |_, ctx| ctx.positive = false);
+        n0.link_process(Some(&n2), atm::eq('0'), |c, ctx| ctx.num.push_back(*c));
+        n0.link_process(Some(&n3), |c, _| is_number(*c), |c, ctx| ctx.num.push_back(*c));
+
+        n1.link_process(Some(&n2), atm::eq('0'), |c, ctx| ctx.num.push_back(*c));
+        n1.link_process(Some(&n3), |c, _| is_number(*c), |c, ctx| ctx.num.push_back(*c));
+
+        n2.link(Some(&n4), atm::eq('.'));
+
+        n3.link_process(None, |c, _| is_number(*c), |c, ctx| ctx.num.push_back(*c));
+        n3.link(Some(&n4), atm::eq('.'));
         // TODO
         
         let err = atm::node();
