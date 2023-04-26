@@ -320,13 +320,13 @@ impl Automa for NumberAutoma {
         
         let err = atm::node();
         n1.link_function(Some(&err), |_,_| true, |_,_| Some(Err("Invalid input in n1")));
-        n2.link_function(Some(&err), |_,_| true, |_,_| Some(Err("Invalid input in n2")));
-        n3.link_function(Some(&err), |_,_| true, |_,_| Some(Err("Invalid input in n3")));
+        n2.link_function(Some(&err), |_,_| true, |_,_| Some(Ok(NumAtm::End)));
+        n3.link_function(Some(&err), |_,_| true, |_,_| Some(Ok(NumAtm::End)));
         n4.link_function(Some(&err), |_,_| true, |_,_| Some(Err("Invalid input in n4")));
-        n5.link_function(Some(&err), |_,_| true, |_,_| Some(Err("Invalid input in n5")));
+        n5.link_function(Some(&err), |_,_| true, |_,_| Some(Ok(NumAtm::End)));
         n6.link_function(Some(&err), |_,_| true, |_,_| Some(Err("Invalid input in n6")));
         n7.link_function(Some(&err), |_,_| true, |_,_| Some(Err("Invalid input in n7")));
-        n8.link_function(Some(&err), |_,_| true, |_,_| Some(Err("Invalid input in n8")));
+        n8.link_function(Some(&err), |_,_| true, |_,_| Some(Ok(NumAtm::End)));
 
         let mut cursor = atm::Cursor::new(NumContext {
             end: false,
@@ -336,13 +336,30 @@ impl Automa for NumberAutoma {
 
         while let Some(c) = iter.next() {
             match cursor.action(&c) {
-                Some(Ok(NumAtm::End)) => todo!(),
+                Some(Ok(NumAtm::End)) => {
+                    return Ok((retrieve_num(cursor.into_context())?, None)) // TODO change None to Some(char)
+                },
                 Some(Err(msg)) => return Err(ParserError::new(msg.to_string()).into()),
                 _ => {},
             }
         }
 
-        todo!();
+        cursor.access_data(|data, ctx| ctx.end = *data.unwrap_or(&false));
+
+        let ctx = cursor.into_context();
+        if ctx.end {
+            return Ok((retrieve_num(ctx)?, None));
+        } else {
+            return Err(ParserError::new("Invalid number...".to_string()).into());
+        }
+
+        fn retrieve_num(ctx: NumContext) -> Result<f32, ParserError> {
+            Ok(ctx.num
+                .into_iter()
+                .collect::<String>()
+                .parse()
+                .map_err(|err: std::num::ParseFloatError| ParserError::new(err.to_string()))?)
+        }
     }
 }
 
