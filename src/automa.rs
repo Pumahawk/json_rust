@@ -176,7 +176,7 @@ impl Automa for StrAutoma {
             EndStr,
         }
         
-        type StrNode = atm::ANode<char, Result<StrAtm, &'static str>, LinkedList::<char>>;
+        type StrNode = atm::ANode<(), char, Result<StrAtm, &'static str>, LinkedList::<char>>;
         
         let mut n1: StrNode = atm::node();
         let mut n2: StrNode = atm::node();

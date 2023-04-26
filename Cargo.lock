@@ -5,7 +5,7 @@ version = 3
 [[package]]
 name = "automa"
 version = "0.1.0"
-source = "git+https://github.com/Pumahawk/rust-automa.git#2c60dc9d510c6815dd9d490c0e248d5a6e21ccb1"
+source = "git+https://github.com/Pumahawk/rust-automa.git#0b79ff4ff90e28952067dc6a9ade5fdbfa4b58c8"
 
 [[package]]
 name = "json"
