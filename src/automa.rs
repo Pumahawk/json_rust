@@ -1,4 +1,5 @@
 use crate::objects as json;
+use std::collections::LinkedList;
 
 use ::automa as atm;
 use atm::Linkable;
@@ -175,13 +176,7 @@ impl Automa for StrAutoma {
             EndStr,
         }
         
-        type StrNode = atm::ANode<char, Result<StrAtm, &'static str>>;
-        
-        let key = std::rc::Rc::new(
-            std::cell::RefCell::new(
-                std::collections::LinkedList::<char>::new()
-            )
-        );
+        type StrNode = atm::ANode<char, Result<StrAtm, &'static str>, LinkedList::<char>>;
         
         let mut n1: StrNode = atm::node();
         let mut n2: StrNode = atm::node();
@@ -191,34 +186,32 @@ impl Automa for StrAutoma {
         let mut fail: StrNode = atm::node();
 
         n1.link(Some(&n2), atm::eq('"'));
-        let kp = std::rc::Rc::clone(&key);
         n2.link(Some(&n3), atm::eq('\\'));
-        n2.link_function(Some(&n4), atm::eq('"'), |_| Some(Ok(StrAtm::EndStr)));
-        n2.link_process(None, |c| c != &'\\', move |c| kp.borrow_mut().push_back(*c));
-        let kp = std::rc::Rc::clone(&key);
-        n3.link_function(Some(&n2), |_| true, move |c| {
+        n2.link_function(Some(&n4), atm::eq('"'), |_,_| Some(Ok(StrAtm::EndStr)));
+        n2.link_process(None, |c,_| c != &'\\', |c, key| key.push_back(*c));
+        n3.link_function(Some(&n2), |_,_| true, |c,key| {
             match c {
-                '\\' => kp.borrow_mut().push_back('\\'),
-                'n' => kp.borrow_mut().push_back('\n'),
-                'r' => kp.borrow_mut().push_back('\r'),
-                't' => kp.borrow_mut().push_back('\t'),
-                '"' => kp.borrow_mut().push_back('"'),
+                '\\' => key.push_back('\\'),
+                'n' => key.push_back('\n'),
+                'r' => key.push_back('\r'),
+                't' => key.push_back('\t'),
+                '"' => key.push_back('"'),
                 _ => return Some(Err("Invalid escape")),
             }
             None
         });
 
-        n1.link_function(Some(&fail), |_| true, |_| Some(Err("Invalid char in node n1")));
-        n2.link_function(Some(&fail), |_| true, |_| Some(Err("Invalid char in node n2")));
-        n3.link_function(Some(&fail), |_| true, |_| Some(Err("Invalid char in node n3")));
-        n4.link_function(Some(&fail), |_| true, |_| Some(Err("Invalid char in node n4")));
-        fail.link_function(None, |_| true, |_| Some(Err("Invalid char in node fail")));
+        n1.link_function(Some(&fail), |_,_| true, |_,_| Some(Err("Invalid char in node n1")));
+        n2.link_function(Some(&fail), |_,_| true, |_,_| Some(Err("Invalid char in node n2")));
+        n3.link_function(Some(&fail), |_,_| true, |_,_| Some(Err("Invalid char in node n3")));
+        n4.link_function(Some(&fail), |_,_| true, |_,_| Some(Err("Invalid char in node n4")));
+        fail.link_function(None, |_,_| true, |_,_| Some(Err("Invalid char in node fail")));
 
-        let mut cursor = atm::Cursor::new(&n1);
+        let mut cursor = atm::Cursor::new(LinkedList::new(), &n1);
         
         while let Some(c) = iter.next() {
             match cursor.action(&c) {
-                Some(Ok(StrAtm::EndStr)) => return Ok(key.take().iter().collect()),
+                Some(Ok(StrAtm::EndStr)) => return Ok(cursor.into_context().iter().collect()),
                 Some(Err(msg)) => return Err(ParserError::new(msg.to_string()).into()),
                 _ => {},
             }
