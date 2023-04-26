@@ -264,12 +264,6 @@ impl Automa for StringAutoma {
     }
 }
 
-enum NumberAtm {
-    N1,
-    N2,
-    N3,
-}
-
 struct NumberAutoma;
 
 impl NumberAutoma {
@@ -288,49 +282,55 @@ impl Automa for NumberAutoma {
     }
 
     fn start(&self, iter: &mut dyn Iterator<Item=Self::Input>) -> AutomaResult<Self::Output> {
-        let mut status = NumberAtm::N1;
-        let mut number_chars = Vec::new();
+
+        enum NumAtm {
+            End,
+        }
+        
+        struct NumContext {
+            end: bool,
+            positive: bool,
+            num: LinkedList::<char>,
+        }
+        
+        type Node = atm::ANode<bool, char, Result<NumAtm, &'static str>, NumContext>;
+
+        let mut n1: Node = atm::node();
+        let mut n2: Node = true.into();
+        let mut n3: Node = true.into();
+        let mut n4: Node = atm::node();
+        let mut n5: Node = true.into();
+        let mut n6: Node = atm::node();
+        let mut n7: Node = atm::node();
+        let mut n8: Node = true.into();
+
+        // TODO
+        
+        let err = atm::node();
+        n1.link_function(Some(&err), |_,_| true, |_,_| Some(Err("Invalid input in n1")));
+        n2.link_function(Some(&err), |_,_| true, |_,_| Some(Err("Invalid input in n2")));
+        n3.link_function(Some(&err), |_,_| true, |_,_| Some(Err("Invalid input in n3")));
+        n4.link_function(Some(&err), |_,_| true, |_,_| Some(Err("Invalid input in n4")));
+        n5.link_function(Some(&err), |_,_| true, |_,_| Some(Err("Invalid input in n5")));
+        n6.link_function(Some(&err), |_,_| true, |_,_| Some(Err("Invalid input in n6")));
+        n7.link_function(Some(&err), |_,_| true, |_,_| Some(Err("Invalid input in n7")));
+        n8.link_function(Some(&err), |_,_| true, |_,_| Some(Err("Invalid input in n8")));
+
+        let mut cursor = atm::Cursor::new(NumContext {
+            end: false,
+            positive: true,
+            num: LinkedList::new(),
+        }, &n1);
+
         while let Some(c) = iter.next() {
-            match status {
-                NumberAtm::N1 => {
-                    match c {
-                        c if is_number(c) => {
-                            number_chars.push(c);
-                            status = NumberAtm::N2;
-                        }
-                        _ => return Err(ParserError::from("Unable to read first number").into()),
-                    }
-                },
-                NumberAtm::N2 => {
-                    match c {
-                        c if is_number(c) => {
-                            number_chars.push(c);
-                        },
-                        '.' => {
-                            number_chars.push(c);
-                            status = NumberAtm::N3;
-                        },
-                        c => {
-                            return Ok((number_chars.iter().collect::<String>().parse().unwrap(), Some(c)));
-                        }
-                    }
-                },
-                NumberAtm::N3 => {
-                    match c {
-                        c if is_number(c) => {
-                            number_chars.push(c);
-                        },
-                        c => {
-                            return Ok((number_chars.iter().collect::<String>().parse().unwrap(), Some(c)));
-                        }
-                    }
-                },
+            match cursor.action(&c) {
+                Some(Ok(NumAtm::End)) => todo!(),
+                Some(Err(msg)) => return Err(ParserError::new(msg.to_string()).into()),
+                _ => {},
             }
         }
-        match number_chars.iter().collect::<String>().parse() {
-            Ok(number) => Ok((number, None)),
-            _ => Err(ParserError::from("Unable to retrieve number").into()),
-        }
+
+        todo!();
     }
 }
 
