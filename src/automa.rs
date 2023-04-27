@@ -290,6 +290,7 @@ impl Automa for NumberAutoma {
         struct NumContext {
             end: bool,
             positive: bool,
+            extra: Option<char>,
             num: LinkedList::<char>,
         }
         
@@ -312,32 +313,39 @@ impl Automa for NumberAutoma {
         n1.link_process(Some(&n2), atm::eq('0'), |c, ctx| ctx.num.push_back(*c));
         n1.link_process(Some(&n3), |c, _| is_number(*c), |c, ctx| ctx.num.push_back(*c));
 
-        n2.link(Some(&n4), atm::eq('.'));
+        n2.link_process(Some(&n4), atm::eq('.'), |c, ctx| ctx.num.push_back(*c));
 
         n3.link_process(None, |c, _| is_number(*c), |c, ctx| ctx.num.push_back(*c));
-        n3.link(Some(&n4), atm::eq('.'));
+        n3.link_process(Some(&n4), atm::eq('.'), |c, ctx| ctx.num.push_back(*c));
+        
+        n4.link_process(Some(&n5), |c, _| is_number(*c), |c, ctx| ctx.num.push_back(*c));
+
+        n5.link_process(None, |c, _| is_number(*c), |c, ctx| ctx.num.push_back(*c));
+
         // TODO
         
         let err = atm::node();
         n1.link_function(Some(&err), |_,_| true, |_,_| Some(Err("Invalid input in n1")));
-        n2.link_function(Some(&err), |_,_| true, |_,_| Some(Ok(NumAtm::End)));
-        n3.link_function(Some(&err), |_,_| true, |_,_| Some(Ok(NumAtm::End)));
+        n2.link_function(Some(&err), |_,_| true, |c, ctx| {ctx.extra = Some(*c); Some(Ok(NumAtm::End))});
+        n3.link_function(Some(&err), |_,_| true, |c, ctx| {ctx.extra = Some(*c); Some(Ok(NumAtm::End))});
         n4.link_function(Some(&err), |_,_| true, |_,_| Some(Err("Invalid input in n4")));
-        n5.link_function(Some(&err), |_,_| true, |_,_| Some(Ok(NumAtm::End)));
+        n5.link_function(Some(&err), |_,_| true, |c, ctx| {ctx.extra = Some(*c); Some(Ok(NumAtm::End))});
         n6.link_function(Some(&err), |_,_| true, |_,_| Some(Err("Invalid input in n6")));
         n7.link_function(Some(&err), |_,_| true, |_,_| Some(Err("Invalid input in n7")));
-        n8.link_function(Some(&err), |_,_| true, |_,_| Some(Ok(NumAtm::End)));
+        n8.link_function(Some(&err), |_,_| true, |c, ctx| {ctx.extra = Some(*c); Some(Ok(NumAtm::End))});
 
         let mut cursor = atm::Cursor::new(NumContext {
             end: false,
             positive: true,
             num: LinkedList::new(),
+            extra: None,
         }, &n1);
 
         while let Some(c) = iter.next() {
             match cursor.action(&c) {
                 Some(Ok(NumAtm::End)) => {
-                    return Ok((retrieve_num(cursor.into_context())?, None)) // TODO change None to Some(char)
+                    let ctx = cursor.into_context();
+                    return Ok((retrieve_num(&ctx)?, ctx.extra))
                 },
                 Some(Err(msg)) => return Err(ParserError::new(msg.to_string()).into()),
                 _ => {},
@@ -348,14 +356,14 @@ impl Automa for NumberAutoma {
 
         let ctx = cursor.into_context();
         if ctx.end {
-            return Ok((retrieve_num(ctx)?, None));
+            return Ok((retrieve_num(&ctx)?, None));
         } else {
             return Err(ParserError::new("Invalid number...".to_string()).into());
         }
 
-        fn retrieve_num(ctx: NumContext) -> Result<f32, ParserError> {
+        fn retrieve_num(ctx: &NumContext) -> Result<f32, ParserError> {
             Ok(ctx.num
-                .into_iter()
+                .iter()
                 .collect::<String>()
                 .parse()
                 .map_err(|err: std::num::ParseFloatError| ParserError::new(err.to_string()))?)
@@ -989,14 +997,7 @@ mod test {
             _ => assert!(false),
         }
         
-        let input = String::from("001234.002123");
-        let mut iter = input.chars();
-        match number_automa.start(&mut iter) {
-            Ok((number, _)) => assert_eq!(1234.002123, number),
-            _ => assert!(false),
-        }
-        
-        let input = String::from("001234.002123,");
+        let input = String::from("1234.002123,");
         let mut iter = input.chars();
         match number_automa.start(&mut iter) {
             Ok((number, Some(c))) => {
@@ -1006,7 +1007,7 @@ mod test {
             _ => assert!(false),
         }
         
-        let input = String::from("001234");
+        let input = String::from("1234");
         let mut iter = input.chars();
         match number_automa.start(&mut iter) {
             Ok((number, _)) => assert_eq!(1234f32, number),
