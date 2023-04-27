@@ -188,7 +188,7 @@ impl Automa for StrAutoma {
         n1.link(Some(&n2), atm::eq('"'));
         n2.link(Some(&n3), atm::eq('\\'));
         n2.link_function(Some(&n4), atm::eq('"'), |_,_| Some(Ok(StrAtm::EndStr)));
-        n2.link_process(None, |c,_| c != &'\\', |c, key| key.push_back(*c));
+        n2.link_process(None, |c,_| c != &'\\', |c, key| key.push_back(c));
         n3.link_function(Some(&n2), |_,_| true, |c,key| {
             match c {
                 '\\' => key.push_back('\\'),
@@ -210,7 +210,7 @@ impl Automa for StrAutoma {
         let mut cursor = atm::Cursor::new(LinkedList::new(), &n1);
         
         while let Some(c) = iter.next() {
-            match cursor.action(&c) {
+            match cursor.action(c) {
                 Some(Ok(StrAtm::EndStr)) => return Ok(cursor.into_context().iter().collect()),
                 Some(Err(msg)) => return Err(ParserError::new(msg.to_string()).into()),
                 _ => {},
@@ -307,33 +307,33 @@ impl Automa for NumberAutoma {
         let mut n8: Node = true.into();
 
         n0.link_process(Some(&n1), atm::eq('-'), |_, ctx| ctx.positive = false);
-        n0.link_process(Some(&n2), atm::eq('0'), |c, ctx| ctx.num.push_back(*c));
-        n0.link_process(Some(&n3), |c, _| is_number(*c), |c, ctx| ctx.num.push_back(*c));
+        n0.link_process(Some(&n2), atm::eq('0'), |c, ctx| ctx.num.push_back(c));
+        n0.link_process(Some(&n3), |c, _| is_number(*c), |c, ctx| ctx.num.push_back(c));
 
-        n1.link_process(Some(&n2), atm::eq('0'), |c, ctx| ctx.num.push_back(*c));
-        n1.link_process(Some(&n3), |c, _| is_number(*c), |c, ctx| ctx.num.push_back(*c));
+        n1.link_process(Some(&n2), atm::eq('0'), |c, ctx| ctx.num.push_back(c));
+        n1.link_process(Some(&n3), |c, _| is_number(*c), |c, ctx| ctx.num.push_back(c));
 
-        n2.link_process(Some(&n4), atm::eq('.'), |c, ctx| ctx.num.push_back(*c));
+        n2.link_process(Some(&n4), atm::eq('.'), |c, ctx| ctx.num.push_back(c));
 
-        n3.link_process(None, |c, _| is_number(*c), |c, ctx| ctx.num.push_back(*c));
-        n3.link_process(Some(&n4), atm::eq('.'), |c, ctx| ctx.num.push_back(*c));
+        n3.link_process(None, |c, _| is_number(*c), |c, ctx| ctx.num.push_back(c));
+        n3.link_process(Some(&n4), atm::eq('.'), |c, ctx| ctx.num.push_back(c));
         
-        n4.link_process(Some(&n5), |c, _| is_number(*c), |c, ctx| ctx.num.push_back(*c));
+        n4.link_process(Some(&n5), |c, _| is_number(*c), |c, ctx| ctx.num.push_back(c));
 
-        n5.link_process(None, |c, _| is_number(*c), |c, ctx| ctx.num.push_back(*c));
+        n5.link_process(None, |c, _| is_number(*c), |c, ctx| ctx.num.push_back(c));
 
         // TODO
         
         let mut err = atm::node();
         n0.link_function(Some(&err), |_,_| true, |_,_| Some(Err("Invalid input in n0")));
         n1.link_function(Some(&err), |_,_| true, |_,_| Some(Err("Invalid input in n1")));
-        n2.link_function(Some(&err), |_,_| true, |c, ctx| {ctx.extra = Some(*c); Some(Ok(NumAtm::End))});
-        n3.link_function(Some(&err), |_,_| true, |c, ctx| {ctx.extra = Some(*c); Some(Ok(NumAtm::End))});
+        n2.link_function(Some(&err), |_,_| true, |c, ctx| {ctx.extra = Some(c); Some(Ok(NumAtm::End))});
+        n3.link_function(Some(&err), |_,_| true, |c, ctx| {ctx.extra = Some(c); Some(Ok(NumAtm::End))});
         n4.link_function(Some(&err), |_,_| true, |_,_| Some(Err("Invalid input in n4")));
-        n5.link_function(Some(&err), |_,_| true, |c, ctx| {ctx.extra = Some(*c); Some(Ok(NumAtm::End))});
+        n5.link_function(Some(&err), |_,_| true, |c, ctx| {ctx.extra = Some(c); Some(Ok(NumAtm::End))});
         n6.link_function(Some(&err), |_,_| true, |_,_| Some(Err("Invalid input in n6")));
         n7.link_function(Some(&err), |_,_| true, |_,_| Some(Err("Invalid input in n7")));
-        n8.link_function(Some(&err), |_,_| true, |c, ctx| {ctx.extra = Some(*c); Some(Ok(NumAtm::End))});
+        n8.link_function(Some(&err), |_,_| true, |c, ctx| {ctx.extra = Some(c); Some(Ok(NumAtm::End))});
         err.link_function(None, |_,_| true, |_,_| Some(Err("Invalid input in n7")));
 
         let mut cursor = atm::Cursor::new(NumContext {
@@ -344,7 +344,7 @@ impl Automa for NumberAutoma {
         }, &n0);
 
         while let Some(c) = iter.next() {
-            match cursor.action(&c) {
+            match cursor.action(c) {
                 Some(Ok(NumAtm::End)) => {
                     let ctx = cursor.into_context();
                     return Ok((retrieve_num(&ctx)?, ctx.extra))
