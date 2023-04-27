@@ -324,7 +324,8 @@ impl Automa for NumberAutoma {
 
         // TODO
         
-        let err = atm::node();
+        let mut err = atm::node();
+        n0.link_function(Some(&err), |_,_| true, |_,_| Some(Err("Invalid input in n0")));
         n1.link_function(Some(&err), |_,_| true, |_,_| Some(Err("Invalid input in n1")));
         n2.link_function(Some(&err), |_,_| true, |c, ctx| {ctx.extra = Some(*c); Some(Ok(NumAtm::End))});
         n3.link_function(Some(&err), |_,_| true, |c, ctx| {ctx.extra = Some(*c); Some(Ok(NumAtm::End))});
@@ -333,13 +334,14 @@ impl Automa for NumberAutoma {
         n6.link_function(Some(&err), |_,_| true, |_,_| Some(Err("Invalid input in n6")));
         n7.link_function(Some(&err), |_,_| true, |_,_| Some(Err("Invalid input in n7")));
         n8.link_function(Some(&err), |_,_| true, |c, ctx| {ctx.extra = Some(*c); Some(Ok(NumAtm::End))});
+        err.link_function(None, |_,_| true, |_,_| Some(Err("Invalid input in n7")));
 
         let mut cursor = atm::Cursor::new(NumContext {
             end: false,
             positive: true,
             num: LinkedList::new(),
             extra: None,
-        }, &n1);
+        }, &n0);
 
         while let Some(c) = iter.next() {
             match cursor.action(&c) {
@@ -362,11 +364,12 @@ impl Automa for NumberAutoma {
         }
 
         fn retrieve_num(ctx: &NumContext) -> Result<f32, ParserError> {
+            let sign = if ctx.positive { 1f32 } else { -1f32 };
             Ok(ctx.num
                 .iter()
                 .collect::<String>()
                 .parse()
-                .map_err(|err: std::num::ParseFloatError| ParserError::new(err.to_string()))?)
+                .map_err(|err: std::num::ParseFloatError| ParserError::new(err.to_string()))?).map(|el: f32| el * sign)
         }
     }
 }
@@ -997,6 +1000,27 @@ mod test {
             _ => assert!(false),
         }
         
+        let input = String::from("0.2123");
+        let mut iter = input.chars();
+        match number_automa.start(&mut iter) {
+            Ok((number, _)) => assert_eq!(0.2123, number),
+            _ => assert!(false),
+        }
+        
+        let input = String::from("0");
+        let mut iter = input.chars();
+        match number_automa.start(&mut iter) {
+            Ok((number, _)) => assert_eq!(0.0, number),
+            _ => assert!(false),
+        }
+        
+        let input = String::from("0.0");
+        let mut iter = input.chars();
+        match number_automa.start(&mut iter) {
+            Ok((number, _)) => assert_eq!(0.0, number),
+            _ => assert!(false),
+        }
+        
         let input = String::from("1234.002123,");
         let mut iter = input.chars();
         match number_automa.start(&mut iter) {
@@ -1011,6 +1035,13 @@ mod test {
         let mut iter = input.chars();
         match number_automa.start(&mut iter) {
             Ok((number, _)) => assert_eq!(1234f32, number),
+            _ => assert!(false),
+        }
+        
+        let input = String::from("-1234");
+        let mut iter = input.chars();
+        match number_automa.start(&mut iter) {
+            Ok((number, _)) => assert_eq!(-1234f32, number),
             _ => assert!(false),
         }
     }
