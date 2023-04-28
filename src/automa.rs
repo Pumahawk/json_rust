@@ -3,6 +3,7 @@ use std::collections::LinkedList;
 
 use ::automa as atm;
 use atm::Linkable;
+use atm::LinkProcess;
 
 struct StoreBufferIterator<T> {
     size: usize,
@@ -176,7 +177,7 @@ impl Automa for StrAutoma {
             EndStr,
         }
         
-        type StrNode = atm::ANode<(), char, Result<StrAtm, &'static str>, LinkedList::<char>>;
+        type StrNode = atm::ANode<(), char, Option<Result<StrAtm, &'static str>>, LinkedList::<char>>;
         
         let mut n1: StrNode = atm::node();
         let mut n2: StrNode = atm::node();
@@ -207,7 +208,7 @@ impl Automa for StrAutoma {
         n4.link_function(Some(&fail), |_,_| true, |_,_| Some(Err("Invalid char in node n4")));
         fail.link_function(None, |_,_| true, |_,_| Some(Err("Invalid char in node fail")));
 
-        let mut cursor = atm::Cursor::new(LinkedList::new(), &n1);
+        let mut cursor = atm::Cursor::new_none(LinkedList::new(), &n1);
         
         while let Some(c) = iter.next() {
             match cursor.action(c) {
@@ -294,7 +295,7 @@ impl Automa for NumberAutoma {
             num: LinkedList::<char>,
         }
         
-        type Node = atm::ANode<bool, char, Result<NumAtm, &'static str>, NumContext>;
+        type Node = atm::ANode<bool, char, Option<Result<NumAtm, &'static str>>, NumContext>;
 
         let mut n0: Node = atm::node();
         let mut n1: Node = atm::node();
@@ -336,7 +337,7 @@ impl Automa for NumberAutoma {
         n8.link_function(Some(&err), |_,_| true, |c, ctx| {ctx.extra = Some(c); Some(Ok(NumAtm::End))});
         err.link_function(None, |_,_| true, |_,_| Some(Err("Invalid input in n7")));
 
-        let mut cursor = atm::Cursor::new(NumContext {
+        let mut cursor = atm::Cursor::new_none(NumContext {
             end: false,
             positive: true,
             num: LinkedList::new(),
