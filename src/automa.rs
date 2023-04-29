@@ -326,23 +326,17 @@ impl Automa for NumberAutoma {
         // TODO
         
         let mut err = atm::node();
-        n0.link_function(Some(&err), |_,_| true, |_,_| Some(Err("Invalid input in n0")));
-        n1.link_function(Some(&err), |_,_| true, |_,_| Some(Err("Invalid input in n1")));
         n2.link_function(Some(&err), |_,_| true, |c, ctx| {ctx.extra = Some(c); Some(Ok(NumAtm::End))});
         n3.link_function(Some(&err), |_,_| true, |c, ctx| {ctx.extra = Some(c); Some(Ok(NumAtm::End))});
-        n4.link_function(Some(&err), |_,_| true, |_,_| Some(Err("Invalid input in n4")));
         n5.link_function(Some(&err), |_,_| true, |c, ctx| {ctx.extra = Some(c); Some(Ok(NumAtm::End))});
-        n6.link_function(Some(&err), |_,_| true, |_,_| Some(Err("Invalid input in n6")));
-        n7.link_function(Some(&err), |_,_| true, |_,_| Some(Err("Invalid input in n7")));
         n8.link_function(Some(&err), |_,_| true, |c, ctx| {ctx.extra = Some(c); Some(Ok(NumAtm::End))});
-        err.link_function(None, |_,_| true, |_,_| Some(Err("Invalid input in n7")));
 
-        let mut cursor = atm::Cursor::new_none(NumContext {
+        let mut cursor = atm::Cursor::black(NumContext {
             end: false,
             positive: true,
             num: LinkedList::new(),
             extra: None,
-        }, &n0);
+        }, &n0, |_| Some(Err("Invalid input, default")));
 
         while let Some(c) = iter.next() {
             match cursor.action(c) {
@@ -992,12 +986,20 @@ mod test {
 
     #[test]
     fn number_automa() {
+        use std::error::Error;
         let number_automa = NumberAutoma::new();
         
         let input = String::from("1234.2123");
         let mut iter = input.chars();
         match number_automa.start(&mut iter) {
             Ok((number, _)) => assert_eq!(1234.2123, number),
+            _ => assert!(false),
+        }
+        
+        let input = String::from("1234..");
+        let mut iter = input.chars();
+        match number_automa.start(&mut iter) {
+            Err(msg) => assert_eq!("Invalid input, default", msg.cause().unwrap().to_string()),
             _ => assert!(false),
         }
         
