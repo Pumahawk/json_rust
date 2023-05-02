@@ -137,6 +137,36 @@ fn string_to_json_escape(txt: &str) -> String {
     }
 }
 
+pub struct NumberExponent {
+    positive: bool,
+    number: u64,
+}
+
+impl NumberExponent {
+    pub fn new(sign: bool, value: u64) -> NumberExponent {
+        NumberExponent {
+            positive: sign,
+            number: value,
+        }
+    }
+}
+
+pub struct Number {
+    positive: bool,
+    number: u64,
+    exponent: Option<NumberExponent>,
+}
+
+impl Number {
+    pub fn new(sign: bool, value: u64, exponent: Option<NumberExponent>) -> Self {
+        Number {
+            positive: sign,
+            number: value,
+            exponent,
+        }
+    }
+}
+
 pub struct ObjectJson {
     parameters: HashMap<String, TypeJson>,
 }
