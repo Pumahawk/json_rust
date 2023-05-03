@@ -167,6 +167,22 @@ impl Number {
     }
 }
 
+impl TryFrom<Number> for i32 {
+
+    type Error = &'static str;
+    
+    fn try_from(value: Number) -> Result<Self, Self::Error> {
+        i32::try_from(value.number)
+            .map_err(|_| "Unable to retrieve i32")
+            .map(|num| num * if value.positive { 1 } else { -1 })
+            .map(|num| num.checked_mul(value.exponent
+                                .into()
+                                .ok_or("Unable to retrieve exponent for i32")
+                                // TODO)
+                            .flatten())
+    }
+}
+
 pub struct ObjectJson {
     parameters: HashMap<String, TypeJson>,
 }
