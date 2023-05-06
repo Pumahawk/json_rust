@@ -187,7 +187,7 @@ impl TryFrom<Number> for i32 {
                         .map(|exp|i32::try_from(exp))
                         .map(|exp| exp.map(|exp| num.checked_mul(exp)
                             .ok_or("Unable to retrieve exponent for i32"))
-                        ).unwrap_or(Ok(Ok(1)))
+                        ).unwrap_or(Ok(Ok(num)))
             )??
     }
 }
