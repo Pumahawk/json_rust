@@ -148,6 +148,13 @@ impl NumberExponent {
         }
     }
 }
+
+impl ToString for NumberExponent {
+    fn to_string(&self) -> String {
+        format!("e{}", self.number.to_string())
+    }
+}
+
 impl From<NumberExponent> for f32 {
     
     fn from(value: NumberExponent) -> Self {
@@ -166,6 +173,15 @@ impl Number {
             number: value,
             exponent,
         }
+    }
+}
+
+impl ToString for Number {
+    fn to_string(&self) -> String {
+        format!("{}{}", self.number.to_string(), self.exponent
+            .as_ref()
+            .map(|exp| exp.to_string())
+            .unwrap_or("".to_string()))
     }
 }
 
