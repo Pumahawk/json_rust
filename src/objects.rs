@@ -420,7 +420,7 @@ impl From<&str> for TypeJson {
 
 impl From<f32> for TypeJson {
     fn from(value: f32) -> Self {
-        value.into()
+        Number::from(value).into()
     }
 }
 
