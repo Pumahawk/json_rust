@@ -176,6 +176,12 @@ impl From<Number> for f32 {
     }
 }
 
+impl From<f32> for Number {
+    fn from(value: f32) -> Self {
+        Number::new(value, None)
+    }
+}
+
 pub struct ObjectJson {
     parameters: HashMap<String, TypeJson>,
 }
