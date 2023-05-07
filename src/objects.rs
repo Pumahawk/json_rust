@@ -138,57 +138,41 @@ fn string_to_json_escape(txt: &str) -> String {
 }
 
 pub struct NumberExponent {
-    positive: bool,
-    number: u64,
+    number: i32,
 }
 
 impl NumberExponent {
-    pub fn new(sign: bool, value: u64) -> NumberExponent {
+    pub fn new(value: i32) -> NumberExponent {
         NumberExponent {
-            positive: sign,
             number: value,
         }
     }
 }
-impl TryFrom<NumberExponent> for i32 {
-
-    type Error = &'static str;
+impl From<NumberExponent> for f32 {
     
-    fn try_from(value: NumberExponent) -> Result<Self, Self::Error> {
-        todo!()
+    fn from(value: NumberExponent) -> Self {
+        10_f32.powi(value.number)
     }
 }
 
 pub struct Number {
-    positive: bool,
-    number: u64,
+    number: f32,
     exponent: Option<NumberExponent>,
 }
 
 impl Number {
-    pub fn new(sign: bool, value: u64, exponent: Option<NumberExponent>) -> Self {
+    pub fn new(value: f32, exponent: Option<NumberExponent>) -> Self {
         Number {
-            positive: sign,
             number: value,
             exponent,
         }
     }
 }
 
-impl TryFrom<Number> for i32 {
-
-    type Error = &'static str;
+impl From<Number> for f32 {
     
-    fn try_from(value: Number) -> Result<Self, Self::Error> {
-        i32::try_from(value.number)
-            .map_err(|_| "Unable to retrieve i32")
-            .map(|num| num * if value.positive { 1 } else { -1 })
-            .map(|num| value.exponent
-                        .map(|exp|i32::try_from(exp))
-                        .map(|exp| exp.map(|exp| num.checked_mul(exp)
-                            .ok_or("Unable to retrieve exponent for i32"))
-                        ).unwrap_or(Ok(Ok(num)))
-            )??
+    fn from(value: Number) -> Self {
+        value.number as f32 * value.exponent.map(|exp| exp.into()).unwrap_or(1.0)
     }
 }
 
@@ -664,5 +648,26 @@ mod tests {
         array.add("v1");
 
         assert_eq!("message-2", TypeJson::from(root).traverse(".k2.k3.n6[1]").unwrap().as_text().unwrap())
+    }
+
+    #[test]
+    fn number_from() {
+        let num = Number::new(10.0, None);
+        assert_eq!(10_f32, num.into());
+
+        let num = Number::new(10.1, None);
+        assert_eq!(10.1_f32, num.into());
+
+        let exp = NumberExponent::new(2);
+        assert_eq!(100_f32, exp.into());
+
+        let exp = NumberExponent::new(-2);
+        assert_eq!(0.01_f32, exp.into());
+
+        let num = Number::new(11.234, Some(NumberExponent::new(2)));
+        assert_eq!(1123.4_f32, num.into());
+
+        let num = Number::new(11.234, Some(NumberExponent::new(-2)));
+        assert_eq!(0.11234_f32, num.into());
     }
 }
