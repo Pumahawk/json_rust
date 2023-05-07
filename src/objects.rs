@@ -6,7 +6,7 @@ pub enum TypeJson {
     Object(ObjectJson),
     List(ListJson),
     Text(String),
-    Number(f32),
+    Number(Number),
     Boolean(bool),
     Null,
 }
@@ -48,13 +48,13 @@ impl TypeJson {
             _ => None,
         }
     }
-    pub fn as_number(&self) -> Option<&f32> {
+    pub fn as_number(&self) -> Option<&Number> {
         match self {
             TypeJson::Number(num) => Some(num),
             _ => None,
         }
     }
-    pub fn as_number_mut(&mut self) -> Option<&mut f32> {
+    pub fn as_number_mut(&mut self) -> Option<&mut Number> {
         match self {
             TypeJson::Number(num) => Some(num),
             _ => None,
@@ -195,6 +195,12 @@ impl From<Number> for f32 {
 impl From<f32> for Number {
     fn from(value: f32) -> Self {
         Number::new(value, None)
+    }
+}
+
+impl From<Number> for TypeJson {
+    fn from(value: Number) -> Self {
+        TypeJson::Number(value)
     }
 }
 
@@ -400,7 +406,7 @@ impl From<&str> for TypeJson {
 
 impl From<f32> for TypeJson {
     fn from(value: f32) -> Self {
-        TypeJson::Number(value)
+        value.into()
     }
 }
 
