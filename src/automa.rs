@@ -934,7 +934,7 @@ mod test {
         match json_autom.start(&mut input.chars()) {
             Ok(json_object) => {
                 assert_eq!("input_automa_1", if let TypeJson::Text(msg) = json_object.get("key1").unwrap() {msg} else {"none"});
-                assert_eq!(33.2, if let TypeJson::Number(num) = json_object.get("key2").unwrap() {num} else {0.0});
+                assert_eq!(33.2, if let TypeJson::Number(num) = json_object.get("key2").unwrap() {num.into()} else {0.0});
             },
             Err(_) => {
                 assert!(false);
@@ -947,7 +947,7 @@ mod test {
             Ok(json_object) => {
                 match json_object.get("key2") {
                     Some(TypeJson::List(list)) => match list.get(0) {
-                        Some(TypeJson::Number(num)) => assert_eq!(12.0, *num),
+                        Some(TypeJson::Number(num)) => assert_eq!(12.0_f32, num.into()),
                         _ => assert!(false),
                     }
                     _ => assert!(false),
@@ -1065,7 +1065,7 @@ mod test {
             _ => assert!(false),
         }
         match array.get(2) {
-            Some(TypeJson::Number(num)) => assert_eq!(2234.23, *num),
+            Some(TypeJson::Number(num)) => assert_eq!(2234.23_f32, num.into()),
             _ => assert!(false),
         }
         match array.get(3) {
@@ -1100,7 +1100,7 @@ mod test {
         let mut user = json::parser(input.chars()).unwrap();
         assert_eq!("Foo", user.get("name").unwrap().as_text().unwrap());
         assert_eq!("Paa", user.get("username").unwrap().as_text().unwrap());
-        assert_eq!(32.0, *user.get("age").unwrap().as_number().unwrap());
+        assert_eq!(32.0_f32, user.get("age").unwrap().as_number().unwrap().into());
         assert_eq!(true, *user.get("valid").unwrap().as_bool().unwrap());
         assert_eq!(false, *user.get("notValid").unwrap().as_bool().unwrap());
         let tags = user.get("tags").unwrap().as_list().unwrap();
