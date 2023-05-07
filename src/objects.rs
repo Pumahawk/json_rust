@@ -158,6 +158,13 @@ impl ToString for NumberExponent {
 impl From<NumberExponent> for f32 {
     
     fn from(value: NumberExponent) -> Self {
+        (&value).into()
+    }
+}
+
+impl From<&NumberExponent> for f32 {
+    
+    fn from(value: &NumberExponent) -> Self {
         10_f32.powi(value.number)
     }
 }
@@ -188,7 +195,14 @@ impl ToString for Number {
 impl From<Number> for f32 {
     
     fn from(value: Number) -> Self {
-        value.number as f32 * value.exponent.map(|exp| exp.into()).unwrap_or(1.0)
+        (&value).into()
+    }
+}
+
+impl From<&Number> for f32 {
+    
+    fn from(value: &Number) -> Self {
+        value.number as f32 * value.exponent.as_ref().map(|exp| exp.into()).unwrap_or(1.0)
     }
 }
 

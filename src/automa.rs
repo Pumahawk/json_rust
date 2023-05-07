@@ -934,7 +934,7 @@ mod test {
         match json_autom.start(&mut input.chars()) {
             Ok(json_object) => {
                 assert_eq!("input_automa_1", if let TypeJson::Text(msg) = json_object.get("key1").unwrap() {msg} else {"none"});
-                assert_eq!(33.2, if let TypeJson::Number(num) = json_object.get("key2").unwrap() {*num} else {0.0});
+                assert_eq!(33.2, if let TypeJson::Number(num) = json_object.get("key2").unwrap() {num} else {0.0});
             },
             Err(_) => {
                 assert!(false);
